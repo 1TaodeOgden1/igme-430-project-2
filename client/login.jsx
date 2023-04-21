@@ -74,8 +74,6 @@ const SignupWindow = (props) => {
             <input id='pass' type='password' name='pass' placeholder='password' />
             <label htmlFor="pass2">Password: </label>
             <input id='pass2' type='password' name='pass2' placeholder='retype password' />
-
-
             <input className='formSubmit' type="submit" value="Sign up" />
         </form>
     )

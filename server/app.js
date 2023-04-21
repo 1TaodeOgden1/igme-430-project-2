@@ -12,6 +12,9 @@ const RedisStore = require('connect-redis').default;
 const redis = require('redis');
 const router = require('./router.js');
 
+//web sockets 
+const websockets = require('./websockets/io.js');
+
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 const dbURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1/DomoMaker';
 mongoose.connect(dbURI).catch((err) => {
@@ -54,9 +57,17 @@ redisClient.connect().then(() => {
   app.set('view engine', 'handlebars');
   app.set('views', `${__dirname}/../views`);
 
+
   router(app);
 
-  app.listen(port, (err) => {
+  /* The socket.io library allows us to add socket.io to our existing
+  http or express servers. Look at the /server/io.js file now to see
+  how this is working. The function then returns a server that we can
+  start that will have socket.io along with everything else.
+*/
+  const server = websockets.socketSetup(app);
+
+  server.listen(port, (err) => {
     if (err) { throw err; }
     console.log(`Listening on port ${port}`);
   });
