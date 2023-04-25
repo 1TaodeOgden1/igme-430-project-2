@@ -1,28 +1,14 @@
 const models = require('../models');
-const helper = require('./helper.js');
 
 const mainPage = (req, res) => {
-  res.render('main-menu',
+  res.render(
+    'main-menu',
     {
-      nickname: helper.currentAccount.nickname
-    });
-}
-
-const createRoom = (req, res) => {
-
-}
-
-const hostRoom = (req, res) => {
-
-}
-
-const lobby = (req, res) => {
-
-}
+      nickname: req.session.account.nickname
+    }
+  );
+};
 
 module.exports = {
   mainPage,
-  createRoom,
-  hostRoom,
-  lobby,
-}
+};

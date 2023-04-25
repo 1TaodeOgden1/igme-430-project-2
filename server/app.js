@@ -12,7 +12,7 @@ const RedisStore = require('connect-redis').default;
 const redis = require('redis');
 const router = require('./router.js');
 
-//web sockets 
+// web sockets
 const websockets = require('./websockets/io.js');
 
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
@@ -56,7 +56,6 @@ redisClient.connect().then(() => {
   app.engine('handlebars', expressHandlebars.engine({ defaultLayout: '' }));
   app.set('view engine', 'handlebars');
   app.set('views', `${__dirname}/../views`);
-
 
   router(app);
 

@@ -1,9 +1,6 @@
 const models = require('../models');
-const helper = require('./helper.js');
 
 const { Account } = models;
-
-
 
 const loginPage = (req, res) => {
   res.render('login');
@@ -11,13 +8,20 @@ const loginPage = (req, res) => {
 
 const userPage = (req, res) => {
   res.render('');
-}
+};
 
 const logout = (req, res) => {
   req.session.destroy();
   res.redirect('/');
 };
 
+//allows client to access the name of the account from the server
+const getCurrentAccountName = (req, res) => {
+  return res.json({nickname: req.session.account.nickname}); 
+}
+
+
+//login functionality
 const login = (req, res) => {
   const username = `${req.body.username}`;
   const pass = `${req.body.pass}`;
@@ -30,15 +34,13 @@ const login = (req, res) => {
     if (err || !account) {
       return res.status(401).json({ error: 'Wrong username or password!' });
     }
-    else {
-      req.session.account = Account.toAPI(account);
-      //store the account inside the helper file for future reference
-      helper.currentAccount = JSON.stringify(Account.toJSON(username));
-      return res.json({ redirect: '/main-menu' });
-    }
+    req.session.account = Account.toAPI(account);
+    return res.json({ redirect: '/main-menu' });
   });
 };
 
+
+//signup functionality
 const signup = async (req, res) => {
   const username = `${req.body.username}`;
   const nickname = `${req.body.nickname}`;
@@ -58,8 +60,6 @@ const signup = async (req, res) => {
     const newAccount = new Account({ username, nickname, password: hash });
     await newAccount.save();
     req.session.account = Account.toAPI(newAccount);
-    //store the account inside the helper file for future reference
-    helper.currentAccount = await Account.toJSON(username);
     return res.json({ redirect: '/main-menu' });
   } catch (err) {
     console.log(err);
@@ -74,5 +74,6 @@ module.exports = {
   loginPage,
   login,
   logout,
-  signup
+  signup,
+  getCurrentAccountName,
 };

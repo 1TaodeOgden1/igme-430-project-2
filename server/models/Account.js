@@ -47,6 +47,8 @@ const AccountSchema = new mongoose.Schema({
 // Converts a doc to something we can store in redis later on.
 AccountSchema.statics.toAPI = (doc) => ({
   username: doc.username,
+  nickname: doc.nickname,
+  createdDate: doc.createdDate,
   _id: doc._id,
 });
 
@@ -77,18 +79,16 @@ AccountSchema.statics.authenticate = async (username, password, callback) => {
   }
 };
 
-AccountSchema.statics.toJSON = async(username, callback) => {
-  
+AccountSchema.statics.toJSON = async (username, callback) => {
   try {
-    //since we this method is only called after authentication succeeds, we should
-    //always get the correct account
-    const doc = await AccountModel.findOne({ username }).lean().exec(); 
+    // since we this method is only called after authentication succeeds, we should
+    // always get the correct account
+    const doc = await AccountModel.findOne({ username }).lean().exec();
     return doc;
-
   } catch (err) {
     console.log('error!');
   }
-}
+};
 
 AccountModel = mongoose.model('Account', AccountSchema);
 module.exports = AccountModel;

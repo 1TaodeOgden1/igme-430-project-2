@@ -3,9 +3,6 @@ const React = require('react');
 const ReactDOM = require('react-dom');
 const socket = io();
 
-//reference to the currently logged-in user account 
-let account = {};
-
 //the 'start' menu of the application
 //players create and join games here
 
@@ -31,7 +28,6 @@ const attemptHost = (e) => {
     //const user  = account.username;
 
     const params = {
-        
         roompass,
         gamelength,
         //user
@@ -41,12 +37,6 @@ const attemptHost = (e) => {
     socket.emit('makeLobby', params);
 
     return false;
-}
-
-//handles messages sent to the 'server-messsages' channel and triggers
-//client-side changes based on it 
-const handleMessage = (msg) => {
-    console.log(msg);
 }
 
 const MainMenu = (props) => {
@@ -101,6 +91,7 @@ const HostForm = (props) => {
                 <input type="submit" value="Submit" />
 
             </form >
+            <div id="errorMessage"></div>
             <button id="backtomain" onClick={loadMainMenu}>Back</button>
         </div>
 
@@ -122,7 +113,7 @@ const JoinForm = (props) => {
                 <input id="room-pass" type='text' name="password" placeholder='password' />
                 <input type="submit" value="Submit" />
             </form>
-
+            <div id="errorMessage"></div>
             <button id="backtomain" onClick={loadMainMenu}>Back</button>
         </div>
     )
@@ -143,8 +134,6 @@ const loadMainMenu = () => {
 
 //load the main root menu when first loading up the page 
 const init = () => {
-    //save the account 
-    account = helper.getAccount().currentAccount; 
     //console.log(account);
     ReactDOM.render(
         <MainMenu />,
@@ -153,14 +142,38 @@ const init = () => {
     //grab the user's account info to be stored and displayed
     //put the user in their own'server messages' socket channel. 
     //needed to handle errors / status messages from io.js
-    socket.on(`server-messages_prelobby`, handleMessage);
-    // socket.on(`server-messages_${account.username}`, handleMessage);
-    socket.emit('event message', 
-    {
-        channel: 'server-messages_prelobby', 
-        messsage: 'player entered server events channel'
-    });
+    socket.on('server-events', handleSocketEvent);
 
+}
+
+//handles event data sent to the 'server-event' channel and triggers
+//client-side changes based on it 
+const handleSocketEvent = (event) => {
+    switch (event.id) {
+        //send the user to the game interface as a player
+        case "joined room": {
+            
+            break;
+        }
+        //send the user to the game interface as the host
+        case "created room": {
+            break;
+        }
+        //returns an error message
+        case "failed join":
+        case "failed host": {
+            document.querySelector("#errorMessage").textContent = event.message; 
+                break;
+        }
+        case 'host disconnected': {
+            //if the host disconnects from their socket
+            //sends user back to the main menu
+            break;
+        }
+        case 'player disconnected': {
+            break;
+        }
+    }
 }
 
 window.onload = init; 

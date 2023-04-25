@@ -39,7 +39,7 @@ const hideError = () => {
     document.getElementById('domoMessage').classList.add('hidden');
 };
 
-const getAccount = async () => {
+const getAccountName = async () => {
     const response = await fetch('/getAccount', {
         method: 'GET',
         headers: {
@@ -57,5 +57,5 @@ module.exports = {
     handleError, 
     sendPost, 
     hideError,
-    getAccount
+    getAccountName
 }
