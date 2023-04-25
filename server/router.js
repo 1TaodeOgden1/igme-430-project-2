@@ -16,12 +16,13 @@ const router = (app) => {
   //create / host room urls
   app.post('/createRoom', mid.requiresLogin, controllers.Menu.createRoom);
   app.post('/hostRoom', mid.requiresLogin, controllers.Menu.hostRoom);
-  app.get('/lobby', mid.requiresLogin, controllers.Menu.lobby); 
+  app.get('/lobby', mid.requiresLogin, controllers.Menu.lobby);
 
   app.post('/signup', mid.requiresSecure, mid.requiresLogout, controllers.Account.signup);
 
   app.get('/logout', mid.requiresLogin, controllers.Account.logout);
 
+  app.get('/getAccount', mid.requiresLogin, controllers.Helper.getAccountJSON);
 
   app.get('/', mid.requiresLogout, controllers.Account.loginPage);
 };

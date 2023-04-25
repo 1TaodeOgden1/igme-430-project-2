@@ -1,13 +1,16 @@
 const models = require('../models');
+const helper = require('./helper.js');
 
 const { Account } = models;
+
+
 
 const loginPage = (req, res) => {
   res.render('login');
 };
 
 const userPage = (req, res) => {
-  res.render('')
+  res.render('');
 }
 
 const logout = (req, res) => {
@@ -27,19 +30,22 @@ const login = (req, res) => {
     if (err || !account) {
       return res.status(401).json({ error: 'Wrong username or password!' });
     }
-
-    req.session.account = Account.toAPI(account);
-
-    return res.json({ redirect: '/main-menu' });
+    else {
+      req.session.account = Account.toAPI(account);
+      //store the account inside the helper file for future reference
+      helper.currentAccount = JSON.stringify(Account.toJSON(username));
+      return res.json({ redirect: '/main-menu' });
+    }
   });
 };
 
 const signup = async (req, res) => {
   const username = `${req.body.username}`;
+  const nickname = `${req.body.nickname}`;
   const pass = `${req.body.pass}`;
   const pass2 = `${req.body.pass2}`;
 
-  if (!username || !pass || !pass2) {
+  if (!username || !nickname || !pass || !pass2) {
     return res.status(400).json({ error: 'All fields are required!' });
   }
 
@@ -49,9 +55,11 @@ const signup = async (req, res) => {
 
   try {
     const hash = await Account.generateHash(pass);
-    const newAccount = new Account({ username, password: hash });
+    const newAccount = new Account({ username, nickname, password: hash });
     await newAccount.save();
     req.session.account = Account.toAPI(newAccount);
+    //store the account inside the helper file for future reference
+    helper.currentAccount = await Account.toJSON(username);
     return res.json({ redirect: '/main-menu' });
   } catch (err) {
     console.log(err);
@@ -66,5 +74,5 @@ module.exports = {
   loginPage,
   login,
   logout,
-  signup,
+  signup
 };

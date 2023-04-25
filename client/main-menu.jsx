@@ -3,6 +3,9 @@ const React = require('react');
 const ReactDOM = require('react-dom');
 const socket = io();
 
+//reference to the currently logged-in user account 
+let account = {};
+
 //the 'start' menu of the application
 //players create and join games here
 
@@ -17,20 +20,21 @@ const attemptJoin = (e) => {
     //send the password to the socket code in the server
     socket.emit('joinLobby', roompass);
 
-    //helper.sendPost(e.target.action, { roompass });
-
     return false;
 }
 
 const attemptHost = (e) => {
     e.preventDefault();
 
-    const roompass = e.target.querySelector("#room-pass").value;
-    const gamelength = e.target.querySelector('#rounds').value;
+    const roompass = document.querySelector("#room-pass").value;
+    const gamelength = document.querySelector('#rounds').value;
+    //const user  = account.username;
 
     const params = {
+        
         roompass,
-        gamelength
+        gamelength,
+        //user
     }
 
     //helper.sendPost(e.target.action, { roompass, gamelength });
@@ -39,7 +43,11 @@ const attemptHost = (e) => {
     return false;
 }
 
-
+//handles messages sent to the 'server-messsages' channel and triggers
+//client-side changes based on it 
+const handleMessage = (msg) => {
+    console.log(msg);
+}
 
 const MainMenu = (props) => {
     //main menu
@@ -67,8 +75,6 @@ const AccountPage = (props) => {
             </div>
         </div>
     )
-
-
 }
 
 const HostForm = (props) => {
@@ -85,9 +91,14 @@ const HostForm = (props) => {
             >
                 <label htmlFor="password">Room Password: </label>
                 <input id="room-pass" type='text' name="password" placeholder='password' />
-                <label htmlFor="roundNum">Game Length: </label>
-                <input id='rounds' type='text' name='roundNum' placeholder='rounds' />
-                <input type="submit" value = "Submit"/>
+                <label htmlFor="rounds">Game Length: </label>
+                <select name="rounds" id="rounds">
+                    <option value='3'>3</option>
+                    <option value=" 5" selected>5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                </select>
+                <input type="submit" value="Submit" />
 
             </form >
             <button id="backtomain" onClick={loadMainMenu}>Back</button>
@@ -109,12 +120,11 @@ const JoinForm = (props) => {
             >
                 <label htmlFor="password">Room Password: </label>
                 <input id="room-pass" type='text' name="password" placeholder='password' />
-                <input type="submit" value = "Submit"/>
+                <input type="submit" value="Submit" />
             </form>
 
             <button id="backtomain" onClick={loadMainMenu}>Back</button>
         </div>
-
     )
 
 }
@@ -133,9 +143,23 @@ const loadMainMenu = () => {
 
 //load the main root menu when first loading up the page 
 const init = () => {
+    //save the account 
+    account = helper.getAccount().currentAccount; 
+    //console.log(account);
     ReactDOM.render(
         <MainMenu />,
         document.getElementById('content'));
+
+    //grab the user's account info to be stored and displayed
+    //put the user in their own'server messages' socket channel. 
+    //needed to handle errors / status messages from io.js
+    socket.on(`server-messages_prelobby`, handleMessage);
+    // socket.on(`server-messages_${account.username}`, handleMessage);
+    socket.emit('event message', 
+    {
+        channel: 'server-messages_prelobby', 
+        messsage: 'player entered server events channel'
+    });
 
 }
 

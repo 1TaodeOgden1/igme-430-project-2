@@ -4,7 +4,7 @@
 */
 const http = require('http');
 const { Server } = require('socket.io');
-const CAPACITY = 4; 
+const CAPACITY = 4;
 
 const lobbies = {
     //a *new* lobby object is formatted as:
@@ -12,7 +12,9 @@ const lobbies = {
     //     host: 'hostname',
     //     userCount: int,
     //     rounds: int,
-    //     state: 'string'
+    //     state: 'string' 
+    //possible states: "waiting" : users are waiting for host to start, new users can join 
+    //                 "in game" : game in progress, new users CANNOT join
     // }
 }
 
@@ -31,14 +33,39 @@ const handleChatMessage = (msg) => {
     io.emit(msg.channel, msg.message);
 };
 
-const handleJoinLobby = (password) => {
-    console.log(password);
+const handleJoinLobby = (password, socket) => {
+    //console.log(password);
+    if (lobbies[params.roompass]) {
+        //if the password is correct, put the user in the room
+
+        //otherwise: 
+    }
+    //room doesn't exist
+    else {
+
+    }
 }
 
 //Creates a new lobby object, IF:
-const handleCreateLobby = (params) => {
+const handleCreateLobby = (params, socket) => {
     console.log(params.roompass);
-    console.log(params.gameLength);
+    console.log(params.gamelength);
+
+    //tell the user a room with the same password exists
+    if (lobbies[params.roompass]) {
+        console.log(`The room with the password ${params.roompass} already exists.`);
+    }
+    else {
+        socket.join(`${params.roompass}`);
+        // broadcast to everyone in the room & store the lobby here
+        const newLobby = {
+            //host: params.user,
+            password: params.roompass,
+            state: "waiting"
+        }
+        io.to(`${params.roompass}`).emit("a new user has joined the room");
+    }
+
 }
 
 
@@ -67,6 +94,12 @@ const socketSetup = (app) => {
     io.on('connection', (socket) => {
         console.log('a user connected');
 
+        //event handler for when the user wants to join a lobby. 
+        //the user's entered password are sent thru the emit call.
+        socket.on('joinLobby', (roompass) => {
+            handleJoinLobby(roompass, socket);
+        })
+
         /* With the socket object, we can handle events for that specific
             user. For example, the disconnect event fires when the user
             disconnects (usually by closing their browser window).
@@ -74,6 +107,8 @@ const socketSetup = (app) => {
         socket.on('disconnect', () => {
             console.log('a user disconnected');
         });
+
+
 
         /* We can also create custom events. For example, the 'chat message'
             event name is just one we made up. As long as the client and the
@@ -84,14 +119,17 @@ const socketSetup = (app) => {
         */
         socket.on('chat message', handleChatMessage);
 
-        //event handler for when the user wants to join a lobby. 
-        //the user's entered password are sent thru the emit call.
-        socket.on('joinLobby', handleJoinLobby);
 
-        
+
         //event handler for when the user wants to create a lobby. 
         //the user's created password and other lobby params are sent thu the emit call. 
-        socket.on('makeLobby', handleCreateLobby);
+        socket.on('makeLobby', (params) => {
+            handleCreateLobby(params, socket);
+        });
+
+        socket.on('server event', (msg) => {
+            console.log(msg);
+        })
     });
 
     /* Finally, after our server is set up, we will return it so that we
@@ -101,4 +139,4 @@ const socketSetup = (app) => {
 };
 
 // We only export the one function from this file, just like in router.js
-module.exports = {  socketSetup, io};
+module.exports = { socketSetup, io };

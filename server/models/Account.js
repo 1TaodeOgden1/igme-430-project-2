@@ -29,6 +29,11 @@ const AccountSchema = new mongoose.Schema({
     unique: true,
     match: /^[A-Za-z0-9_\-.]{1,16}$/,
   },
+  nickname: {
+    type: String,
+    required: true,
+    trim: true,
+  },
   password: {
     type: String,
     required: true,
@@ -71,6 +76,19 @@ AccountSchema.statics.authenticate = async (username, password, callback) => {
     return callback(err);
   }
 };
+
+AccountSchema.statics.toJSON = async(username, callback) => {
+  
+  try {
+    //since we this method is only called after authentication succeeds, we should
+    //always get the correct account
+    const doc = await AccountModel.findOne({ username }).lean().exec(); 
+    return doc;
+
+  } catch (err) {
+    console.log('error!');
+  }
+}
 
 AccountModel = mongoose.model('Account', AccountSchema);
 module.exports = AccountModel;
