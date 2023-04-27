@@ -2,8 +2,8 @@ const mainPage = (req, res) => {
   res.render(
     'main-menu',
     {
-      nickname: req.session.account.nickname
-    }
+      nickname: req.session.account.nickname,
+    },
   );
 };
 

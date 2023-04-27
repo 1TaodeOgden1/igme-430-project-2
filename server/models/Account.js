@@ -87,6 +87,7 @@ AccountSchema.statics.toJSON = async (username, callback) => {
     return doc;
   } catch (err) {
     console.log('error!');
+    return (callback(err));
   }
 };
 

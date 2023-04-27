@@ -1,14 +1,10 @@
 const gamePage = (req, res) => {
-  res.render('game'); 
+  res.render('game');
 };
 
-const moveToGame = (req, res) => {
-  return res.status(200).json({redirect: '/gamePage', info: req.body});
-}
+const moveToGame = (req, res) => res.status(200).json({ redirect: '/gamePage', info: req.body });
 
 module.exports = {
   gamePage,
-  moveToGame
-}
-
-
+  moveToGame,
+};

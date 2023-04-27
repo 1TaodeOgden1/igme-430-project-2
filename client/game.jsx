@@ -7,31 +7,42 @@ const socket = io();
 //SOCKET EVENTS
 const handleSocketEvent = (event) => {
     switch (event.id) {
-        //waiting room events
 
-        //when the host clicks the start button
-        case "host started game": {
-            ReactDOM.render(<GameInterface/>,
-            document.getElementById('main'));
-            
-            socket.emit('game started');
+        /*WAITING ROOM EVENTS*/
+
+        //when websockets has created a game instance inside the server, the 
+        //game compoenents are rendered
+        case "game initialized": {
+            ReactDOM.render(<GameInterface />,
+                document.getElementById('main'));
+            //render each person's hand
+            ReactDOM.render(<PlayerHand />,
+                document.getElementById('controls'));
             break;
         }
-        //when a user is put into the room,as soon as they enter this page
+        case "render game state": {
+            break;
+        }
         case "assigned": {
+            break;
+        }
+        //when a user is put into the room
+        case 'user joined': {
             ReactDOM.render(<WaitingInterface isHost={event.isHost} />,
                 document.getElementById('main'));
             ReactDOM.render(<WaitingControls isHost={event.isHost} />,
                 document.getElementById('controls'));
+            ReactDOM.render(<PlayerList users={event.userList} />,
+                document.getElementById('user_container'));
             break;
         }
-        //game events
-
+        /*GAME EVENTS*/
     }
 }
 
 //REACT EVENTS 
 const startGame = () => {
+    //tells socket server host has started the game
     socket.emit('user event', {
         user_event: "started game"
     });
@@ -56,28 +67,22 @@ const WaitingInterface = () => {
 
 const PlayerList = (props) => {
     //simple block list of users in lobby
+    const usersAsHTML = props.users.map(user =>
+    (
+        <li>{user}</li>
+    ));
     return (
         <ul>
-            <li class="playerSlot" id="p1">
-                if(props.player1){
-                    <h3>props.player1</h3>
-                }
-            </li>
-            <li class="playerSlot" id="p2">
-
-            </li>
-            <li class="playerSlot" id="p3">
-
-            </li>
-            <li class="playerSlot" id="p4">
-
-            </li>
+            {usersAsHTML}
         </ul>
     )
 }
 
-const PlayerHand = () => {
 
+const PlayerHand = () => {
+    return (
+        <h3>Your hand would be here</h3>
+    )
 }
 
 const JudgeWaitingUI = () => {
@@ -91,7 +96,7 @@ const JudgePickUI = () => {
 const WaitingControls = (props) => {
     if (props.isHost) {
         return (
-            <button id="startButton" onClick = {startGame}>Start Game</button>
+            <button id="startButton" onClick={startGame}>Start Game</button>
         )
 
     }

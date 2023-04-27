@@ -24,8 +24,16 @@ const bypassSecure = (req, res, next) => {
   next();
 };
 
+const requiresLobby = (req, res, next) => {
+  if (!req.session.lobby) {
+    return res.redirect('/main-menu');
+  }
+  return next();
+};
+
 module.exports.requiresLogin = requiresLogin;
 module.exports.requiresLogout = requiresLogout;
+module.exports.requiresLobby = requiresLobby;
 
 if (process.env.NODE_ENV === 'production') {
   module.exports.requiresSecure = requiresSecure;

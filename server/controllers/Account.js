@@ -15,13 +15,10 @@ const logout = (req, res) => {
   res.redirect('/');
 };
 
-//allows client to access the name of the account from the server
-const getCurrentAccountName = (req, res) => {
-  return res.json({nickname: req.session.account.nickname}); 
-}
+// allows client to access the name of the account from the server
+const getCurrentAccountName = (req, res) => res.json({ nickname: req.session.account.nickname });
 
-
-//login functionality
+// login functionality
 const login = (req, res) => {
   const username = `${req.body.username}`;
   const pass = `${req.body.pass}`;
@@ -39,8 +36,7 @@ const login = (req, res) => {
   });
 };
 
-
-//signup functionality
+// signup functionality
 const signup = async (req, res) => {
   const username = `${req.body.username}`;
   const nickname = `${req.body.nickname}`;

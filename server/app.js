@@ -12,8 +12,6 @@ const RedisStore = require('connect-redis').default;
 const redis = require('redis');
 const router = require('./router.js');
 
-
-
 // web sockets
 const websockets = require('./websockets/io.js');
 
@@ -54,7 +52,6 @@ redisClient.connect().then(() => {
     resave: false,
     saveUninitialized: false,
   });
-
 
   app.use(sessionMiddleware);
 

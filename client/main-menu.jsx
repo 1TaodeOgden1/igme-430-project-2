@@ -65,7 +65,16 @@ const AccountPage = (props) => {
 
             <div id="accountControls">
                 <button id="deleteAccount">Delete Account</button>
+                <button id= "changePassword">Change Password</button>
             </div>
+        </div>
+    )
+}
+
+const PassChangeForm = (props) => {
+    return (
+        <div>
+              <button id="cancelChange" onClick = {loadMainMenu}>Cancel</button>
         </div>
     )
 }
