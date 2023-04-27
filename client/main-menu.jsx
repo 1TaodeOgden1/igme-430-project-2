@@ -37,8 +37,8 @@ const attemptHost = (e) => {
     return false;
 }
 
-const handleMoveToGame = async (params) => {
-    helper.sendPost('/to-game', params);
+const handleMoveToGame = async () => {
+    helper.sendPost('/to-game');
     return false;
 }
 
@@ -163,18 +163,12 @@ const handleSocketEvent = (event) => {
     switch (event.id) {
         //send the user to the game interface as a player
         case "joined room": {
-            handleMoveToGame({
-                name: helper.getData('/getAccount').nickname,
-                isHost: false,
-            });
+            handleMoveToGame();
             break;
         }
         //send the user to the game interface as the host
         case "created room": {
-            handleMoveToGame({
-                name: helper.getData('/getAccount').nickname,
-                isHost: true,
-            });
+            handleMoveToGame();
 
             break;
         }

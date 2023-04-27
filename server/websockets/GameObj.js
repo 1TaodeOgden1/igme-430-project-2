@@ -26,7 +26,7 @@ class Game {
         this.nextRound();
     }
 
-    /*These two methods will make requests to a public CAH API*/
+    /* These two methods will make requests to a public CAH API */
 
     // the player draw a card (which are represented as strings)
     draw(player) {
@@ -35,7 +35,7 @@ class Game {
     }
 
     getPrompt() {
-         // to be implemented with API
+        // to be implemented with API
         return 'A prompt.';
     }
 
@@ -74,7 +74,7 @@ class Game {
 
     // logistics for moving to the next
     nextRound() {
-        //players have already drawn on round '0'
+        // players have already drawn on round '0'
         if (this.currentRound !== 0) {
             // each player except for the judge draws
             this.players.map((player) => {
@@ -88,9 +88,7 @@ class Game {
             });
         }
 
-        prompt = 
-
-        hostIndex = this.currentRound % this.players.length;
+        prompt = hostIndex = this.currentRound % this.players.length;
         players[hostIndex].isJudge = true;
     }
 }

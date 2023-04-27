@@ -56,6 +56,9 @@ const cleanupLobby = (socket) => {
     }
 };
 
+// This is where the majority of the game logic is implemented
+// Essentially, each lobby has a Game class that is manipulated by
+//
 const handleGameEvent = (params, socket) => {
     const sessionInfo = socket.request.session;
     const lobby = lobbies[sessionInfo.lobby];
@@ -67,7 +70,7 @@ const handleGameEvent = (params, socket) => {
             // A socket room represents the lobby in the server
             socket.join(`${sessionInfo.lobby}`);
 
-            //tell every user that a new user has joined
+            // tell every user that a new user has joined
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
                 id: 'user joined',
                 lobbyInfo: this.lobby,
@@ -75,7 +78,7 @@ const handleGameEvent = (params, socket) => {
                 // is the same as the lobby's host username
                 isHost: (sessionInfo.account.username === lobby.host),
                 userList: lobby.userList,
-                message: 'Put in the lobby'
+                message: 'Put in the lobby',
             });
 
             break;
@@ -120,7 +123,8 @@ const handleJoinLobby = (password, socket) => {
                 id: 'failed join',
                 message: "Room's game is in progress!",
             });
-        } else {
+        }
+        else {
             // grab the express session context
             const userSession = socket.request.session;
 
@@ -139,7 +143,6 @@ const handleJoinLobby = (password, socket) => {
             lobbies[password].userList.push(userSession.account.nickname);
 
             // tell the client to start rendering the game interface
-            io.to(`${params.roompass}`).emit('a new user has joined the room');
             socket.emit('server-events', {
                 id: 'joined room',
                 message: 'successfully joined room!',
@@ -181,7 +184,7 @@ const handleCreateLobby = (params, socket) => {
         // save the lobby to the server
         lobbies[params.roompass] = newLobby;
 
-        //put the user in the lobby
+        // put the user in the lobby
         lobbies[params.roompass].userList.push(userSession.account.nickname);
 
         // and to the user's session
@@ -207,31 +210,31 @@ const handleCreateLobby = (params, socket) => {
 */
 const socketSetup = (app, sessionMiddleware) => {
     /* To create our Socket.IO server with our Express app, we first
-                        need to have the http library create a "server" using our Express
-                        app as a template. We then hand that server off to Socket.IO which
-                        will generate for us our IO server.
-                    */
+                          need to have the http library create a "server" using our Express
+                          app as a template. We then hand that server off to Socket.IO which
+                          will generate for us our IO server.
+                      */
     const server = http.createServer(app);
     io = new Server(server);
 
     io.use(wrap(sessionMiddleware));
 
     /* Socket.IO is entirely built on top of an event system. Our server
-                        can send messages to clients, which trigger events on their side.
-                        In the same way, clients can send messages to the server, which
-                        trigger events on our side.
+                          can send messages to clients, which trigger events on their side.
+                          In the same way, clients can send messages to the server, which
+                          trigger events on our side.
   
-                        The first event is the 'connection' event, which fires each time a
-                        client connects to our server. The event returns a "socket" object
-                        which represents their unique connection to our server.
-                    */
+                          The first event is the 'connection' event, which fires each time a
+                          client connects to our server. The event returns a "socket" object
+                          which represents their unique connection to our server.
+                      */
     io.on('connection', (socket) => {
         console.log('A user has connected!');
 
         /* With the socket object, we can handle events for that specific
-                                            user. For example, the disconnect event fires when the user
-                                            disconnects (usually by closing their browser window).
-                                        */
+            user. For example, the disconnect event fires when the user
+          disconnects (usually by closing their browser window).
+           */
         socket.on('disconnect', () => {
             console.log('a user disconnected');
             cleanupLobby(socket);
@@ -258,8 +261,8 @@ const socketSetup = (app, sessionMiddleware) => {
     });
 
     /* Finally, after our server is set up, we will return it so that we
-                        can start it in app.js.
-                    */
+                          can start it in app.js.
+                      */
     return server;
 };
 
