@@ -24,12 +24,17 @@ const handleSocketEvent = (event) => {
             break;
         }
         //when a user is put into the room
-        case 'created room':
-        case 'user joined': {
-            ReactDOM.render(<WaitingInterface/>,
+        case 'you joined': {
+            ReactDOM.render(<WaitingInterface />,
                 document.getElementById('main'));
-            ReactDOM.render(<WaitingControls isHost={event.isHost} />,
+            ReactDOM.render(<WaitingControls ready={false} />,
                 document.getElementById('controls'));
+            ReactDOM.render(<PlayerList users={event.userList} />,
+                document.getElementById('user_container'));
+            break;
+        }
+        //when another user joins, update everyone's DOMs 
+        case 'another user joined': {
             ReactDOM.render(<PlayerList users={event.userList} />,
                 document.getElementById('user_container'));
             break;
@@ -56,10 +61,10 @@ const GameInterface = () => {
     )
 }
 
-const WaitingInterface = () => {
+const WaitingInterface = (props) => {
     //waiting room screen
     return (
-        <h3>Waiting for the host to start...</h3>
+        <h3>Waiting for all players to ready up...</h3>
     )
 }
 
@@ -92,14 +97,39 @@ const JudgePickUI = () => {
 }
 
 const WaitingControls = (props) => {
-    if (props.isHost) {
+    const [isReady, toggleReady] = React.useState(props.ready);
+
+
+    if (isReady) {
         return (
-            <button id="startButton" onClick={startGame}>Start Game</button>
+            <button id="startButton"
+                onClick={() => {
+                    toggleReady(props.ready);
+                    socket.emit('player readied')
+                }}>
+                Cancel
+            </button>
         )
+
     }
-    return (
-        <h3>Your hand of cards will show here!</h3>
-    )
+    else {
+        return (
+            <button id="startButton"
+                onClick={() => {
+                    toggleReady(!props.ready)
+                    socket.emit('player readied');
+                }}
+            >
+                Ready
+            </button>
+        )
+
+    }
+
+}
+
+const readyGame = () => {
+
 }
 
 const init = () => {
@@ -109,7 +139,7 @@ const init = () => {
     //now tell the server that the user has finally joined the game 
     //and to render the initial screen
     socket.emit('user event', {
-        user_event: "entered room"
+        user_event: 'entered room'
     });
 }
 

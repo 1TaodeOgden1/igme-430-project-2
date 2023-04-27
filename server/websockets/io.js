@@ -13,7 +13,7 @@ const CAPACITY = 4;
 const lobbies = {
     // a *new* lobby object is formatted as:
     // 'lobbyPassword': {
-    //     host: 'hostname',
+    //     readyCount: int
     //     userList: [], //nicknames of each user currently in the lobby
     //     rounds: int,
     //     game: new Game(userList, rounds)
@@ -64,36 +64,24 @@ const handleGameEvent = (params, socket) => {
     const lobby = lobbies[sessionInfo.lobby];
     console.log(sessionInfo);
     switch (params.user_event) {
-        //when the host enters a host's room
+        
+        //the user enters a room
         case 'entered room': {
-            // A socket room represents the lobby in the server
             socket.join(`${sessionInfo.lobby}`);
-
-            // tell every user that a new user has joined
-            io.to(`${sessionInfo.lobby}`).emit('server-events', {
-                id: 'user joined',
-                lobbyInfo: this.lobby,
-                // if the user's account username (which must be unique in the database)
-                // is the same as the lobby's host username
-                isHost: false,
+            //tell the client that they are in the looby
+            socket.emit('server-events', {
+                id: 'you joined',
                 userList: lobby.userList,
-                message: 'user added to lobby',
-            });
+                message: 'you were added to lobby',
 
-            break;
-        }
-        //when the host enters the room
-        case 'created room': {
-            socket.join(`${sessionInfo.lobby}`);
+            })
 
-            io.to(`${sessionInfo.lobby}`).emit('server-events', {
-                id: 'lobby created',
+            //tell the other users that this user has joined 
+            socket.to(`${sessionInfo.lobby}`).emit('server-events', {
+                id: 'another user joined',
                 lobbyInfo: this.lobby,
-                // if the user's account username (which must be unique in the database)
-                // is the same as the lobby's host username
-                isHost: true,
                 userList: lobby.userList,
-                message: 'host added to lobby',
+                message: 'another player added to lobby',
             });
             break;
         }
@@ -188,7 +176,7 @@ const handleCreateLobby = (params, socket) => {
         const userSession = socket.request.session;
         // broadcast to everyone in the room & save the lobby
         const newLobby = {
-            host: userSession.account.username,
+            readyCount: 0,
             userList: [],
             rounds: params.gamelength,
             capacity: CAPACITY,
