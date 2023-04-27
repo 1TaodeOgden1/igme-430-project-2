@@ -6,7 +6,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 // max number of users per lobby;
-// stretch goal:
+// stretch goal: users can adjust how many players are in the room
 const CAPACITY = 4;
 
 const lobbies = {
@@ -28,6 +28,10 @@ const lobbies = {
 */
 let io;
 
+// convert a connect middleware to a Socket.IO middleware
+const wrap = middleware => (socket, next) =>
+    middleware(socket.request, {}, next);
+
 /* This handleChatMessage function takes in a message and "emits" it
     to a specific channel in our socket.io system. Clients can choose to
     subscribe to specific channels, as seen in the /hosted/client.js file.
@@ -36,6 +40,50 @@ const handleChatMessage = (msg) => {
     io.emit(msg.channel, msg.message);
 };
 
+//cleans up the lobby object stored here and adjusts the lobby object inside 
+//
+const cleanupLobby = (socket, userSession) =>  {
+    if(socket.request.session.lobby){
+
+         userSession.reload((err) => {
+            if (err) {
+               console.log(err);
+            }
+            userSession.lobby = null;
+            userSession.save();
+        })
+
+    }
+}
+
+const handleGameEvent = (params, socket) => {
+    const sessionInfo = socket.request.session;
+    console.log(sessionInfo);
+    switch (params.user_event) {
+        case "entered room": {
+            socket.emit('server-events', {
+                id: 'assigned',
+                lobby: sessionInfo.lobby,
+                //if the user's account username (which must be unique in the database)
+                //is the same as the lobby's host username
+                isHost: (sessionInfo.account.username == sessionInfo.lobby.host),
+                message: "Put in the lobby"
+            })
+            break;
+        }
+        case 'started game': {
+            socket.emit('server-events', {
+                id: "host started game",
+                message: "host started thegame"
+            })
+            break;
+        }
+        case 'game started': {
+            break;
+        }
+    }
+
+}
 /*
     
 */
@@ -43,16 +91,39 @@ const handleJoinLobby = (password, socket) => {
     // console.log(password);
     // if the password is correct and the lobby exists
     if (lobbies[password]) {
-        // AND the room isn't full
-        if (!lobbies[password].userList.length < CAPACITY) {
+        //the room isn't full
+        if (lobbies[password].userList.length >= CAPACITY) {
             socket.emit('server-events', {
                 id: "failed join",
                 message: "Room is full..."
             })
-            // put the user in the room
-            // tell the server to render the game interface
-        } else {
+
+        }
+        //AND the game hasn't started
+        else if (lobbies[password].state == 'in game') {
+            socket.emit('server-events', {
+                id: "failed join",
+                message: "Room's game is in progress!"
+            })
+        }
+        else {
+            //grab the express session context
+            const userSession = socket.request.session;
             socket.join(lobbies);
+
+            //save the lobby object to the user's session
+            userSession.reload((err) => {
+                if (err) {
+                    return socket.disconnect();
+                }
+                userSession.lobby = lobbies[password];
+                userSession.save();
+            })
+
+            // put the user in the room
+            lobbies[password].userList.push(userSession.account.nickname);
+
+            // tell the client to start rendering the game interface
             io.to(`${params.roompass}`).emit('a new user has joined the room');
             socket.emit("server-events", {
                 id: "joined room",
@@ -65,7 +136,7 @@ const handleJoinLobby = (password, socket) => {
         socket.emit('server-events', {
             id: "failed join",
             message: "Incorrect password / Room with password doesn't exist!"
-        })
+        });
     }
 };
 
@@ -76,23 +147,40 @@ const handleCreateLobby = (params, socket) => {
 
     // tell the user a room with the same password exists
     if (lobbies[params.roompass]) {
-        console.log("lobby created");
         socket.emit('server-events', {
             id: "failed host",
             message: "A room with the same password already exists!"
         });
     } else {
         socket.join(`${params.roompass}`);
+        //grab the express session context
+        const userSession = socket.request.session;
         // broadcast to everyone in the room & save the lobby
         const newLobby = {
-            // host: params.user,
+            host: userSession.account.username,
             userList: [],
             rounds: params.gamelength,
             capacity: CAPACITY,
             state: 'waiting',
         };
 
+        //save the lobby to the server
         lobbies[params.roompass] = newLobby;
+
+        //and to the user's session
+        userSession.reload((err) => {
+            if (err) {
+                return socket.disconnect();
+            }
+            userSession.lobby = newLobby;
+            userSession.save();
+        });
+
+        //tell the client to start rendering the game interface
+        socket.emit('server-events', {
+            id: "created room",
+            message: "Successfully created lobby!"
+        });
 
         io.to(`${params.roompass}`).emit('a new user has joined the room');
     }
@@ -101,7 +189,7 @@ const handleCreateLobby = (params, socket) => {
 /* This setup function takes in our express app, adds Socket.IO to it,
     and sets up event handlers for our io events.
 */
-const socketSetup = (app) => {
+const socketSetup = (app, sessionMiddleware) => {
     /* To create our Socket.IO server with our Express app, we first
             need to have the http library create a "server" using our Express
             app as a template. We then hand that server off to Socket.IO which
@@ -109,6 +197,8 @@ const socketSetup = (app) => {
         */
     const server = http.createServer(app);
     io = new Server(server);
+
+    io.use(wrap(sessionMiddleware));
 
     /* Socket.IO is entirely built on top of an event system. Our server
             can send messages to clients, which trigger events on their side.
@@ -120,7 +210,8 @@ const socketSetup = (app) => {
             which represents their unique connection to our server.
         */
     io.on('connection', (socket) => {
-        console.log('a user connected to the server.');
+        console.log('A user has connected!');
+
 
         /* With the socket object, we can handle events for that specific
                     user. For example, the disconnect event fires when the user
@@ -128,15 +219,11 @@ const socketSetup = (app) => {
                 */
         socket.on('disconnect', () => {
             console.log('a user disconnected');
+            cleanupLobby(socket, socket.request.session);
+
         });
 
-        /* We can also create custom events. For example, the 'chat message'
-                    event name is just one we made up. As long as the client and the
-                    server both know to use that name, we can use it.
-    
-                    Here, whenever the user sends a message in the 'chat message'
-                    event channel, we will handle it with handleChatMessage.
-                */
+        /*SOCKET EVENT HANDLERS*/
         socket.on('chat message', handleChatMessage);
 
         // event handler for when the user wants to create a lobby.
@@ -151,9 +238,10 @@ const socketSetup = (app) => {
             handleJoinLobby(roompass, socket);
         });
 
-        socket.on('server-events', (msg) => {
-            console.log(msg);
+        socket.on('user event', (params) => {
+            handleGameEvent(params, socket);
         });
+
     });
 
     /* Finally, after our server is set up, we will return it so that we

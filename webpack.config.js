@@ -3,6 +3,7 @@ const path = require('path');
 module.exports = {
     entry: {
         app: './client/main-menu.jsx',
+        game: './client/game.jsx',
         login: './client/login.jsx'
     },
 

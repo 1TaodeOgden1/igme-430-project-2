@@ -12,6 +12,8 @@ const RedisStore = require('connect-redis').default;
 const redis = require('redis');
 const router = require('./router.js');
 
+
+
 // web sockets
 const websockets = require('./websockets/io.js');
 
@@ -43,15 +45,18 @@ redisClient.connect().then(() => {
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.json());
 
-  app.use(session({
+  const sessionMiddleware = session({
     key: 'sessionid',
-    secret: 'Domo Arigato',
+    secret: 'Domo Tomato',
     store: new RedisStore({
       client: redisClient,
     }),
     resave: false,
     saveUninitialized: false,
-  }));
+  });
+
+
+  app.use(sessionMiddleware);
 
   app.engine('handlebars', expressHandlebars.engine({ defaultLayout: '' }));
   app.set('view engine', 'handlebars');
@@ -64,7 +69,7 @@ redisClient.connect().then(() => {
   how this is working. The function then returns a server that we can
   start that will have socket.io along with everything else.
 */
-  const server = websockets.socketSetup(app);
+  const server = websockets.socketSetup(app, sessionMiddleware);
 
   server.listen(port, (err) => {
     if (err) { throw err; }

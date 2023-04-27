@@ -25,17 +25,20 @@ const attemptHost = (e) => {
 
     const roompass = document.querySelector("#room-pass").value;
     const gamelength = document.querySelector('#rounds').value;
-    //const user  = account.username;
 
     const params = {
         roompass,
         gamelength,
-        //user
     }
 
     //helper.sendPost(e.target.action, { roompass, gamelength });
     socket.emit('makeLobby', params);
 
+    return false;
+}
+
+const handleMoveToGame = async (params) => {
+    helper.sendPost('/to-game', params);
     return false;
 }
 
@@ -134,7 +137,6 @@ const loadMainMenu = () => {
 
 //load the main root menu when first loading up the page 
 const init = () => {
-    //console.log(account);
     ReactDOM.render(
         <MainMenu />,
         document.getElementById('content'));
@@ -152,25 +154,25 @@ const handleSocketEvent = (event) => {
     switch (event.id) {
         //send the user to the game interface as a player
         case "joined room": {
-            
+            handleMoveToGame({
+                name: helper.getData('/getAccount').nickname,
+                isHost: false,
+            });
             break;
         }
         //send the user to the game interface as the host
         case "created room": {
+            handleMoveToGame({
+                name: helper.getData('/getAccount').nickname,
+                isHost: true,
+            });
+
             break;
         }
         //returns an error message
         case "failed join":
         case "failed host": {
-            document.querySelector("#errorMessage").textContent = event.message; 
-                break;
-        }
-        case 'host disconnected': {
-            //if the host disconnects from their socket
-            //sends user back to the main menu
-            break;
-        }
-        case 'player disconnected': {
+            document.querySelector("#errorMessage").textContent = event.message;
             break;
         }
     }

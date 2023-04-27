@@ -1,5 +1,3 @@
-const models = require('../models');
-
 const mainPage = (req, res) => {
   res.render(
     'main-menu',

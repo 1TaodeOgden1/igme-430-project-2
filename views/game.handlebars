@@ -1,19 +1,28 @@
-<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NotCAH: </title>
 </head>
-<body>
-    <div id = "userList">
-        <!--displays names of users in the lobby-->
-    </div>
-    <div id = "content">
-        <!--main interface, either for the 'waiting room' or
-        game interface-->
-    </div>
 
+<body>
+    <div id="master-container">
+        <div id="user_container">
+            <!--List users in the room here-->
+        </div>
+        <div id="main">
+            <!--a simple waiting screen OR 
+            where the prompt and game info is displayed-->
+        </div>
+        <div id="controls">
+            <!--Player hand / controls go here-->
+        </div>
+
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/assets/gameBundle.js"></script>
 </body>
+
 </html>
