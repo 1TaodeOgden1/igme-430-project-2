@@ -41,8 +41,8 @@ const handleChatMessage = (msg) => {
     io.emit(msg.channel, msg.message);
 };
 
-// cleans up the lobby object stored here and adjusts the lobby object inside
-//
+//removes session's reference to the lobby & 
+//adjusts the lobby object here
 const cleanupLobby = (socket) => {
     const { session } = socket.request;
     if (session.lobby) {
@@ -64,8 +64,7 @@ const handleGameEvent = (params, socket) => {
     const lobby = lobbies[sessionInfo.lobby];
     console.log(sessionInfo);
     switch (params.user_event) {
-        // this is always the first GameEvent to trigger, so the
-        // user is added to the socket room
+        //when the host enters a host's room
         case 'entered room': {
             // A socket room represents the lobby in the server
             socket.join(`${sessionInfo.lobby}`);
@@ -76,11 +75,26 @@ const handleGameEvent = (params, socket) => {
                 lobbyInfo: this.lobby,
                 // if the user's account username (which must be unique in the database)
                 // is the same as the lobby's host username
-                isHost: (sessionInfo.account.username === lobby.host),
+                isHost: false,
                 userList: lobby.userList,
-                message: 'Put in the lobby',
+                message: 'user added to lobby',
             });
 
+            break;
+        }
+        //when the host enters the room
+        case 'created room': {
+            socket.join(`${sessionInfo.lobby}`);
+
+            io.to(`${sessionInfo.lobby}`).emit('server-events', {
+                id: 'lobby created',
+                lobbyInfo: this.lobby,
+                // if the user's account username (which must be unique in the database)
+                // is the same as the lobby's host username
+                isHost: true,
+                userList: lobby.userList,
+                message: 'host added to lobby',
+            });
             break;
         }
         case 'started game': {

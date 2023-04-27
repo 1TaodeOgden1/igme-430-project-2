@@ -23,12 +23,10 @@ const handleSocketEvent = (event) => {
         case "render game state": {
             break;
         }
-        case "assigned": {
-            break;
-        }
         //when a user is put into the room
+        case 'created room':
         case 'user joined': {
-            ReactDOM.render(<WaitingInterface isHost={event.isHost} />,
+            ReactDOM.render(<WaitingInterface/>,
                 document.getElementById('main'));
             ReactDOM.render(<WaitingControls isHost={event.isHost} />,
                 document.getElementById('controls'));
@@ -98,7 +96,6 @@ const WaitingControls = (props) => {
         return (
             <button id="startButton" onClick={startGame}>Start Game</button>
         )
-
     }
     return (
         <h3>Your hand of cards will show here!</h3>
