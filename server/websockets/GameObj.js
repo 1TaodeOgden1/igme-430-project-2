@@ -10,6 +10,8 @@ class Game {
         this.judge = '';
         this.responses = {};
         this.prompts = {};
+        //index of the judge in the array
+        this.jIndex = 0;
     }
 
     // creates a Player struct to represent each player in the game
@@ -25,18 +27,10 @@ class Game {
             }
         });
 
-        // set up the first round
-        this.prompt = this.getPrompt();
+        //go to first round
+        this.nextRound();
 
-        let jIndex;
-        // prevent divide by zero
-        if (this.players.length === 1) {
-            jIndex = 0;
-        } else {
-            jIndex = this.currentRound % (this.players.length - 1);
-        }
-        this.players[jIndex].isJudge = true;
-        this.judge = this.players[jIndex].name;
+
     }
 
     handleLeaver(playerName) {
@@ -53,6 +47,7 @@ class Game {
         let card;
         let deckIndex;
 
+        //this while loop will prevent out-of-bound errors
         while (!card) {
             deckIndex = Math.floor(Math.random() * this.responses.white.length - 1);
             card = this.responses.white[deckIndex];
@@ -65,11 +60,20 @@ class Game {
     }
 
     getPrompt() {
-        const deckIndex = Math.floor(Math.random() * this.prompts.black.length - 1);
-        const prompt = this.prompts.black[deckIndex].text;
-        delete this.prompts.black[deckIndex];
-        return (prompt);
+        let card;
+        let deckIndex;
+
+        //this while loop will prevent out-of-bound errors
+        while (!card) {
+            deckIndex = Math.floor(Math.random() * this.responses.black.length - 1);
+            card = this.responses.black[deckIndex];
+        }
+
+        const prompt = card.text;
+
         // remove it from the deck
+        delete this.prompts.black[deckIndex];
+        return prompt;
     }
 
     // returns an array containing the scores, in order of player names in this.players
@@ -91,13 +95,12 @@ class Game {
     getAllSubmitted() {
         const obj = this.players.map((player) => {
             if (!player.isJudge) {
-
+                return ({
+                    name: player.name,
+                    submitted: player.chosenCard,
+                });
             }
 
-            return ({
-                name: player.name,
-                submitted: player.chosenCard,
-            });
         });
         return obj;
     }
@@ -123,32 +126,42 @@ class Game {
 
     // logistics for moving to the next
     nextRound() {
-        // end of current round actions
-        this.players.forEach((player) => {
-            // each player except for the judge draws
-            if (!player.isJudge) {
-                this.draw(player);
-            }
+        if (this.currentRound !== 0) {
+            this.players.forEach((player) => {
+                //players don't draw first round
 
-            // de-judgify
-            if (player.isJudge) {
-                player.isJudge = false;
-            }
-        });
+                // each player except for the judge draws
+                if (!player.isJudge) {
+                    this.draw(player);
+                }
+
+                // de-judgify
+                if (player.isJudge) {
+                    player.isJudge = false;
+                }
+            });
+        }
 
         // setting up next round
         this.currentRound++;
         this.prompt = this.getPrompt();
 
-        let jIndex;
-        // prevent divide by zero
+        // don't bother changing if there's only 1 person
         if (this.players.length === 1) {
-            jIndex = 0;
+            this.jIndex = 0;
         } else {
-            jIndex = this.currentRound % (this.players.length - 1);
+            //loop back to index 0
+            if (jIndex > this.players.length - 1) {
+                this.jIndex = 0;
+
+            }
         }
+
         this.players[jIndex].isJudge = true;
         this.judge = this.players[jIndex].name;
+
+        //prep index for next round
+        this.jIndex++;
 
         //clear responses
         this.players.forEach((player) => {

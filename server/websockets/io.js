@@ -211,8 +211,7 @@ const handleGameEvent = async (params, socket) => {
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
                 id: 'ready up for next round',
             });
-
-
+            
             break;
         }
         // when the player disconnects from / leaves the lobby
@@ -237,6 +236,7 @@ const handleGameEvent = async (params, socket) => {
             // give players control over when
             // to proceed to the next round
             lobby.readyCount = 0;
+            lobby.game.nextRound();
             renderGameState(lobby, sessionInfo);
         }
     }
