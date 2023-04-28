@@ -64,7 +64,7 @@ const handleGameEvent = (params, socket) => {
     const lobby = lobbies[sessionInfo.lobby];
     console.log(sessionInfo);
     switch (params.user_event) {
-        
+
         //the user enters a room
         case 'entered room': {
             socket.join(`${sessionInfo.lobby}`);
@@ -85,7 +85,22 @@ const handleGameEvent = (params, socket) => {
             });
             break;
         }
-        case 'started game': {
+        case 'readied': {
+            lobby.readyCount++;
+            break;
+        }
+        case 'unreadied': {
+            lobby.readyCount--;
+            break;
+        }
+        default: {
+            break;
+        }
+
+    }
+    //only start games when there's 3+ people
+    if (lobby.userList.length >= 2) {
+        if (lobby.readyCount == lobby.userList.length) {
             // add the gameState object to the triggered lobby; this will store
             // game pertinent info
             lobby.game = new Game(
@@ -98,12 +113,9 @@ const handleGameEvent = (params, socket) => {
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
                 id: 'game initialized',
             });
-            break;
-        }
-        default: {
-            break;
         }
     }
+
 };
 /*
 

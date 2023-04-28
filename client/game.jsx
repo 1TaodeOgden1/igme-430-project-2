@@ -44,12 +44,8 @@ const handleSocketEvent = (event) => {
 }
 
 //REACT EVENTS 
-const startGame = () => {
-    //tells socket server host has started the game
-    socket.emit('user event', {
-        user_event: "started game"
-    });
-}
+
+
 
 //REACT COMPONENTS
 const GameInterface = () => {
@@ -99,13 +95,14 @@ const JudgePickUI = () => {
 const WaitingControls = (props) => {
     const [isReady, toggleReady] = React.useState(props.ready);
 
-
     if (isReady) {
         return (
-            <button id="startButton"
+            <button id="readyButton"
                 onClick={() => {
                     toggleReady(props.ready);
-                    socket.emit('player readied')
+                    socket.emit('user event', {
+                        user_event: 'unreadied'
+                    });
                 }}>
                 Cancel
             </button>
@@ -114,10 +111,12 @@ const WaitingControls = (props) => {
     }
     else {
         return (
-            <button id="startButton"
+            <button id="readyButton"
                 onClick={() => {
                     toggleReady(!props.ready)
-                    socket.emit('player readied');
+                    socket.emit('user event', {
+                        user_event: 'readied'
+                    });
                 }}
             >
                 Ready
