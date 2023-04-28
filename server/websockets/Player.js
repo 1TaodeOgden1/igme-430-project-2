@@ -1,3 +1,7 @@
+
+
+//a class that represents a player
+
 class Player {
   constructor(name) {
     this.name = name;

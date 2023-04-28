@@ -1,6 +1,3 @@
-
-
-const { response } = require('express');
 const { Player } = require('./Player.js');
 
 class Game {
@@ -11,8 +8,8 @@ class Game {
         this.populatePlayers(userList);
         this.prompt = '';
         this.judge = '';
-        this.responses;
-        this.prompts;
+        this.responses = {};
+        this.prompts = {};
     }
 
     // creates a Player struct to represent each player in the game
@@ -33,7 +30,7 @@ class Game {
 
         let jIndex;
         // prevent divide by zero
-        if (this.players.length == 1) {
+        if (this.players.length === 1) {
             jIndex = 0;
         } else {
             jIndex = this.currentRound % (this.players.length - 1);
@@ -50,17 +47,22 @@ class Game {
         // }
     }
 
-
     // the player draws a card (which are represented as strings)
     draw(player) {
-        const deckIndex = Math.floor(Math.random() * this.responses['white'].length - 1);
-        const cardText = this.responses['white'][deckIndex]['text'];
-        player.hand.push(cardText);
+        const deckIndex = Math.floor(Math.random() * this.responses.white.length - 1);
+        const card = this.responses.white[deckIndex];
+        player.hand.push(card.text);
+
+        // remove it from the deck
+        delete this.responses.white[deckIndex];
     }
 
     getPrompt() {
-        // to be implemented with API
-        return 'A prompt.';
+        const deckIndex = Math.floor(Math.random() * this.prompts.black.length - 1);
+        const prompt = this.prompts.black[deckIndex].text;
+        delete this.prompts.black[deckIndex];
+        return (prompt);
+        // remove it from the deck
     }
 
     // returns an array containing the scores, in order of player names in this.players
@@ -69,9 +71,26 @@ class Game {
     }
 
     // https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
-    submitCard(player, cardText) {
-        player.hand = player.hand.filter((e) => e !== cardText);
+    submitCard(playerName, cardText) {
+        const player = this.getPlayerByName(playerName);
+        // remove the card
+        player.hand = player.hand.filter(e => e !== cardText);
         player.chosenCard = cardText;
+    }
+
+    //only called when all cards have been submitted; 
+    //simply returns a formatted JS object that can 
+    //easily be processed by the client 
+    getAllSubmitted() {
+        const obj = this.players.map(player => {
+            if (!player.isJudge) {
+                return ({
+                    name: player.name,
+                    submitted: player.chosenCard
+                })
+            }
+        });
+        return obj;
     }
 
     // pick the winner for the ROUND, given the player's name
@@ -96,7 +115,7 @@ class Game {
     // logistics for moving to the next
     nextRound() {
         // end of current round actions
-        this.players.map((player) => {
+        this.players.forEach((player) => {
             // each player except for the judge draws
             if (!player.isJudge) {
                 this.draw(player);
@@ -114,7 +133,7 @@ class Game {
 
         let jIndex;
         // prevent divide by zero
-        if (this.players.length == 1) {
+        if (this.players.length === 1) {
             jIndex = 0;
         } else {
             jIndex = this.currentRound % (this.players.length - 1);
@@ -124,9 +143,22 @@ class Game {
     }
 
     getPlayerByName(name) {
-        const playerOnly = this.players.filter((player) => player.name === name);
-
+        const playerOnly = this.players.filter
+        ((player) => player.name === name)[0];
         return playerOnly;
+    }
+
+    allPlayersReady() {
+        // if a player hasn't submitted yet, immediately return false
+        for (let i = 0; i < this.players.length; i++) {
+            // perform this check on all players besides the judge
+            if (!this.players[i].isJudge) {
+                if (!this.players[i].chosenCard) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
 
