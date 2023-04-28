@@ -105,7 +105,6 @@ class Game {
   // pick the winner for the ROUND, given the player's name
   pickWinner(winnerName) {
     this.getPlayerByName(winnerName).score++;
-    this.nextRound();
   }
 
   // pick the winner for the GAME
