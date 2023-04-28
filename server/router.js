@@ -13,9 +13,6 @@ const router = (app) => {
   app.get('/gamePage', mid.requiresLogin, mid.requiresLobby, controllers.Game.gamePage);
   app.get('/login', mid.requiresSecure, mid.requiresLogout, controllers.Account.loginPage);
 
-  // helper.getData urls
-  app.get('/getAccount', mid.requiresLogin, controllers.Account.getCurrentAccountName);
-
   // other
   app.get('/logout', mid.requiresLogin, controllers.Account.logout);
 };

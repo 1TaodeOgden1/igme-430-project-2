@@ -12,17 +12,45 @@ const handleSocketEvent = (event) => {
 
         //when websockets has created a game instance inside the server, the 
         //game compoenents are rendered
-        case "game initialized": {
+        case "initialize game": {
             ReactDOM.render(<GameInterface />,
                 document.getElementById('main'));
-            //render each person's hand
-            ReactDOM.render(<PlayerHand />,
-                document.getElementById('controls'));
+
+
+            //tell the socket server that the game has rendered 
+            //and that the game logic can now be kickstarted
+            socket.emit('user event', {
+                user_event: 'game rendered'
+            });
             break;
+
         }
         case "render game state": {
+            ReactDOM.render(<GameInterface
+                roundNum={event.currentRound}
+                shownPrompt={event.prompt}
+                judgeName={event.judgeName}
+            />, document.getElementById('main'));
+
+
+        }
+
+        case "you become judge": {
+            //render the cards in the player's hand
+            ReactDOM.render(<JudgeWaitingUI />,
+                document.getElementById('controls'));
+            break;
             break;
         }
+
+        case "start picking cards": {
+            //render the cards in the player's hand
+            ReactDOM.render(<PlayerHand cards={event.cards} />,
+                document.getElementById('controls'));
+            break;
+
+        }
+
         //when a user is put into the room
         case 'you joined': {
             ReactDOM.render(<WaitingInterface />,
@@ -48,11 +76,17 @@ const handleSocketEvent = (event) => {
 
 
 //REACT COMPONENTS
-const GameInterface = () => {
+const GameInterface = (props) => {
     //gameplay screen
     return (
         <div id="gameplayScreen">
-            <h3>There's nothing here...for now!</h3>
+            <div class="roundTracker">
+                <h3>Round {props.roundNum}</h3>
+            </div>
+            <div class="judgeTracker">Prepare your answer for {props.judgeName}</div>
+            <div class="promptContainer">
+                <div id="prompt">{props.shownPrompt}</div>
+            </div>
         </div>
     )
 }
@@ -66,29 +100,63 @@ const WaitingInterface = (props) => {
 
 const PlayerList = (props) => {
     //simple block list of users in lobby
-    const usersAsHTML = props.users.map(user =>
-    (
-        <li>{user}</li>
-    ));
+    let i = 0;
+    const usersAsHTML = props.users.map(user => {
+        i++;
+        //id will affect the item's color
+        return (<li id={`p${i}`}><h3>{user}</h3></li>)
+    });
+
     return (
-        <ul>
+        <ul id="userList">
             {usersAsHTML}
         </ul>
     )
 }
 
 
-const PlayerHand = () => {
+const PlayerHand = (props) => {
+    //format cards as radio buttons
+    const cardsAsHTML = props.cards.map(card => {
+        console.log(card);
+        return (
+            <label class="container">
+                <input type="radio" name="card_to_submit" value={card} />
+                {card}
+            </label>
+        )
+    })
+
     return (
-        <h3>Your hand would be here</h3>
+        <div id="hand">
+            <div id='cards'>
+                {cardsAsHTML}
+            </div>
+            <div id = "submit-container">
+                <button id='submitCard'>Submit</button>
+            </div>
+        </div>
+
     )
 }
 
 const JudgeWaitingUI = () => {
-
+    return (
+        <h3>Players are preparing...</h3>
+    )
 }
 
 const JudgePickUI = () => {
+    <div id='judgeScreen'>
+        <div id='submissions'>
+
+        </div>
+        <button id="confirm">
+            Confirm
+        </button>
+
+    </div>
+
 
 }
 
@@ -124,10 +192,6 @@ const WaitingControls = (props) => {
         )
 
     }
-
-}
-
-const readyGame = () => {
 
 }
 

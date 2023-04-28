@@ -24,7 +24,6 @@ const handleSignup = (e) => {
     helper.hideError();
 
     const username = e.target.querySelector('#user').value;
-    const nickname = e.target.querySelector('#name').value;
     const pass = e.target.querySelector('#pass').value;
     const pass2 = e.target.querySelector('#pass2').value;
 
@@ -38,7 +37,7 @@ const handleSignup = (e) => {
         return false;
     }
 
-    helper.sendPost(e.target.action, { username, pass, pass2, nickname});
+    helper.sendPost(e.target.action, { username, pass, pass2});
 
     return false;
 }
@@ -71,8 +70,6 @@ const SignupWindow = (props) => {
             className="mainForm">
             <label htmlFor="username">Username: </label>
             <input id="user" type="text" name="username" placeholder='username' />
-            <label htmlFor='nickname'>What do you want to be called?</label>
-            <input id='name' type='text' name="nickname" placeholder="nickname" />
             <label htmlFor="pass">Password: </label>
             <input id='pass' type='password' name='pass' placeholder='password' />
             <label htmlFor="pass2">Confirm Password: </label>

@@ -1,3 +1,6 @@
+
+
+const { response } = require('express');
 const { Player } = require('./Player.js');
 
 class Game {
@@ -7,6 +10,9 @@ class Game {
         this.players = [];
         this.populatePlayers(userList);
         this.prompt = '';
+        this.judge = '';
+        this.responses;
+        this.prompts;
     }
 
     // creates a Player struct to represent each player in the game
@@ -15,23 +21,41 @@ class Game {
     }
 
     // each player draws a fresh seven cards
-    intializeGame() {
+    initializeGame() {
         this.players.forEach((player) => {
             for (let i = 0; i < 7; i++) {
                 this.draw(player);
             }
         });
 
-        // go to the 'first' round
-        this.nextRound();
+        // set up the first round
+        this.prompt = this.getPrompt();
+
+        let jIndex;
+        // prevent divide by zero
+        if (this.players.length == 1) {
+            jIndex = 0;
+        } else {
+            jIndex = this.currentRound % (this.players.length - 1);
+        }
+        this.players[jIndex].isJudge = true;
+        this.judge = this.players[jIndex].name;
     }
 
-    /* These two methods will make requests to a public CAH API */
+    handleLeaver(playerName) {
+        this.nextRound();
+        // const offender = this.getPlayerByName(playerName);
+        // if (offender.isJudge) {
 
-    // the player draw a card (which are represented as strings)
+        // }
+    }
+
+
+    // the player draws a card (which are represented as strings)
     draw(player) {
-        // to be implemented with API
-        player.hand.push('A card');
+        const deckIndex = Math.floor(Math.random() * this.responses['white'].length - 1);
+        const cardText = this.responses['white'][deckIndex]['text'];
+        player.hand.push(cardText);
     }
 
     getPrompt() {
@@ -52,10 +76,7 @@ class Game {
 
     // pick the winner for the ROUND, given the player's name
     pickWinner(winnerName) {
-        const winnerOnly = this.players.filter((player) => player.name === winnerName);
-        // above should return an array of size 1
-        winnerOnly[0].score++;
-
+        this.getPlayerByName(winnerName).score++;
         this.nextRound();
     }
 
@@ -74,22 +95,38 @@ class Game {
 
     // logistics for moving to the next
     nextRound() {
-        // players have already drawn on round '0'
-        if (this.currentRound !== 0) {
+        // end of current round actions
+        this.players.map((player) => {
             // each player except for the judge draws
-            this.players.map((player) => {
-                if (!player.isJudge) {
-                    this.draw(player);
-                }
-                // de-judgify
-                if (player.isJudge) {
-                    player.isJudge = false;
-                }
-            });
-        }
+            if (!player.isJudge) {
+                this.draw(player);
+            }
 
-        prompt = hostIndex = this.currentRound % this.players.length;
-        players[hostIndex].isJudge = true;
+            // de-judgify
+            if (player.isJudge) {
+                player.isJudge = false;
+            }
+        });
+
+        // setting up next round
+        this.currentRound++;
+        this.prompt = this.getPrompt();
+
+        let jIndex;
+        // prevent divide by zero
+        if (this.players.length == 1) {
+            jIndex = 0;
+        } else {
+            jIndex = this.currentRound % (this.players.length - 1);
+        }
+        this.players[jIndex].isJudge = true;
+        this.judge = this.players[jIndex].name;
+    }
+
+    getPlayerByName(name) {
+        const playerOnly = this.players.filter((player) => player.name === name);
+
+        return playerOnly;
     }
 }
 
