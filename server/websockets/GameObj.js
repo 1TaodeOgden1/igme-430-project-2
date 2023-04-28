@@ -65,8 +65,8 @@ class Game {
 
         //this while loop will prevent out-of-bound errors
         while (!card) {
-            deckIndex = Math.floor(Math.random() * this.responses.black.length - 1);
-            card = this.responses.black[deckIndex];
+            deckIndex = Math.floor(Math.random() * this.responses.white.length - 1);
+            card = this.prompts.black[deckIndex];
         }
 
         const prompt = card.text;
@@ -157,8 +157,8 @@ class Game {
             }
         }
 
-        this.players[jIndex].isJudge = true;
-        this.judge = this.players[jIndex].name;
+        this.players[this.jIndex].isJudge = true;
+        this.judge = this.players[this.jIndex].name;
 
         //prep index for next round
         this.jIndex++;
