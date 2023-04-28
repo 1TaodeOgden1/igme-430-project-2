@@ -86,11 +86,11 @@ const renderGameState = (lobby, sessionInfo) => {
             io.to(`${player.name}`).emit('server-events', {
                 id: 'you become judge',
             });
-            // the player
-            io.to(`${player.name}`).emit('server-events', {
-                id: 'start picking cards',
-                cards: player.hand,
-            });
+            // // the player
+            // io.to(`${player.name}`).emit('server-events', {
+            //     id: 'start picking cards',
+            //     cards: player.hand,
+            // });
         } else {
             // the player
             io.to(`${player.name}`).emit('server-events', {
@@ -153,18 +153,8 @@ const handleGameEvent = async (params, socket) => {
             lobby.readyCount--;
             break;
         }
-        // go ahead and start the game when the game is rendered on the client
-        case 'game rendered': {
-            // reset the ready counter;
-            // give players control over when
-            // to proceed to the next round
-            lobby.readyCount = 0;
-
-            lobby.game.initializeGame();
-        }
         case 'start round': {
             renderGameState(lobby, sessionInfo);
-
             break;
         }
         // when a single player submits a card
@@ -222,6 +212,7 @@ const handleGameEvent = async (params, socket) => {
                 id: 'ready up for next round',
             });
 
+
             break;
         }
         // when the player disconnects from / leaves the lobby
@@ -241,6 +232,11 @@ const handleGameEvent = async (params, socket) => {
     // PROCEEDING TO THE NEXT ROUND
     if (lobby.userList.length >= 1 && lobby.state === 'in game') {
         if (lobby.readyCount === lobby.userList.length) {
+
+            // reset the ready counter;
+            // give players control over when
+            // to proceed to the next round
+            lobby.readyCount = 0;
             renderGameState(lobby, sessionInfo);
         }
     }
@@ -263,10 +259,12 @@ const handleGameEvent = async (params, socket) => {
             lobby.game.prompts = await loadBlack();
             lobby.state = 'in game';
 
-            // tell the room the game has started; should trigger REACT changes in the other sockets
-            io.to(`${sessionInfo.lobby}`).emit('server-events', {
-                id: 'initialize game',
-            });
+            // reset the ready counter;
+            // give players control over when
+            // to proceed to the next round
+            lobby.readyCount = 0;
+            lobby.game.initializeGame();
+            renderGameState(lobby, sessionInfo);
         }
     }
 };

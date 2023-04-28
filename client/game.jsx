@@ -10,21 +10,6 @@ const handleSocketEvent = (event) => {
 
         /*WAITING ROOM EVENTS*/
 
-        //when websockets has created a game instance inside the server, the 
-        //game compoenents are rendered
-        case "initialize game": {
-            ReactDOM.render(<GameInterface />,
-                document.getElementById('main'));
-
-            //tell the socket server that the game has rendered 
-            //and that the game logic can now be kickstarted
-            socket.emit('user event', {
-                user_event: 'game rendered'
-            });
-            break;
-
-        }
-
         //when a user is put into the room
         case 'you joined': {
             ReactDOM.render(<StatusMessage
@@ -197,7 +182,7 @@ const JudgePickUI = (props) => {
             <label class="container">
                 <input type="radio" name="submitted_response"
                     value={`${choice.name}`}
-                    data-choice={`${choice.submitted}`} />{choice.name}
+                    data-choice={`${choice.submitted}`} />{choice.submitted}
             </label>
         )
     });
