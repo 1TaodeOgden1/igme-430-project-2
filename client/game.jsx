@@ -87,6 +87,7 @@ const handleSocketEvent = (event) => {
             break;
         }
         case 'pick a winner': {
+            console.log(event.choices);
             ReactDOM.render(<JudgePickUI choices={event.choices} />,
                 document.getElementById('controls'));
             break;
@@ -167,7 +168,7 @@ const PlayerHand = (props) => {
                 {card}
             </label>
         )
-    })
+    });
 
     //tbd useEffect to grab checked radio button
     return (
@@ -196,26 +197,28 @@ const JudgePickUI = (props) => {
             <label class="container">
                 <input type="radio" name="submitted_response"
                     value={`${choice.name}`}
-                    data-choice={`${choice.submitted}`} />{choice}
+                    data-choice={`${choice.submitted}`} />{choice.name}
             </label>
         )
     });
-
     return (
         <div id='judgeScreen'>
             <div id='submissions'>
                 {choicesAsHTML}
             </div>
-            <button id="confirm" onClick={() => {
-                socket.emit('user event', {
-                    user_event: 'judge decided',
-                    cardText: document.querySelector('#submissions input:checked').dataset.choice,
-                    winner: document.querySelector('#submissions input:checked').value
-                })
+            <button id="confirm" onClick={(e) => {
+                const cardText = document.querySelector('#submissions input:checked').dataset.choice;
+                const winner = document.querySelector('#submissions input:checked').value
+                if (cardText && winner) {
+                    socket.emit('user event', {
+                        user_event: 'judge decided',
+                        cardText,
+                        winner
+                    })
+                }
             }}>
                 Confirm
             </button>
-
         </div>
     )
 }

@@ -1,6 +1,4 @@
-
-
-//a class that represents a player
+// a class that represents a player
 
 class Player {
   constructor(name) {

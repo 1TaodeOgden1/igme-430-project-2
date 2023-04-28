@@ -5,8 +5,7 @@
 const http = require('http');
 const { Server } = require('socket.io');
 const { Game } = require('./GameObj.js');
-const { loadWhite, loadBlack } = require('./cah_api.js')
-
+const { loadWhite, loadBlack } = require('./cah_api.js');
 
 // max number of users per lobby;
 // stretch goal: users can adjust how many players are in the room
@@ -43,7 +42,6 @@ const handleChatMessage = (msg) => {
     io.emit(msg.channel, msg.message);
 };
 
-
 // removes session's reference to the lobby &
 // adjusts the lobby object here
 const cleanupLobby = (socket) => {
@@ -63,15 +61,14 @@ const cleanupLobby = (socket) => {
 
         });
 
-        //destroy the lobby
+        // destroy the lobby
         delete lobbies[`${sessionInfo.lobby}`];
     }
 };
 
 const removeFromLobby = (socket) => {
     const sessionInfo = socket.request.session;
-
-}
+};
 
 const renderGameState = (lobby, sessionInfo) => {
     // show the status of the game to all clients
@@ -84,13 +81,16 @@ const renderGameState = (lobby, sessionInfo) => {
 
     // send different events depending on the client user's role
     lobby.game.players.forEach((player) => {
-
         if (player.isJudge) {
             // the judge
             io.to(`${player.name}`).emit('server-events', {
                 id: 'you become judge',
             });
-
+            // the player
+            io.to(`${player.name}`).emit('server-events', {
+                id: 'start picking cards',
+                cards: player.hand,
+            });
         } else {
             // the player
             io.to(`${player.name}`).emit('server-events', {
@@ -99,7 +99,7 @@ const renderGameState = (lobby, sessionInfo) => {
             });
         }
     });
-}
+};
 
 // This is where the majority of the game logic is implemented
 // Essentially, each lobby has a Game class that is manipulated by
@@ -112,10 +112,9 @@ const handleGameEvent = async (params, socket) => {
     switch (params.user_event) {
         // the user enters a room
         case 'entered room': {
-
-            //if the user was already in a lobby
-            //this code would trigger if the user refreshes the page 
-            //or reconnects to the lobby
+            // if the user was already in a lobby
+            // this code would trigger if the user refreshes the page
+            // or reconnects to the lobby
             if (sessionInfo.lobby) {
 
             }
@@ -124,7 +123,7 @@ const handleGameEvent = async (params, socket) => {
             socket.join(`${sessionInfo.lobby}`);
 
             /* also put the user into a special socket room that listens
-               to user-specific game events */
+                     to user-specific game events */
             socket.join(`${sessionInfo.account.username}`);
 
             // tell the client that they are in the looby
@@ -156,6 +155,11 @@ const handleGameEvent = async (params, socket) => {
         }
         // go ahead and start the game when the game is rendered on the client
         case 'game rendered': {
+            // reset the ready counter;
+            // give players control over when
+            // to proceed to the next round
+            lobby.readyCount = 0;
+
             lobby.game.initializeGame();
         }
         case 'start round': {
@@ -189,7 +193,7 @@ const handleGameEvent = async (params, socket) => {
                             'server-events',
                             {
                                 id: 'pick a winner',
-                                choices: lobby.game.getAllSubmitted()
+                                choices: lobby.game.getAllSubmitted(),
                             },
                         );
                     } else {
@@ -204,24 +208,18 @@ const handleGameEvent = async (params, socket) => {
             break;
         }
 
-
         // when the judge has decided on a winner, update the game instance
         case 'judge decided': {
-            game.lobby.pickWinner(params.winner);
+            lobby.game.pickWinner(params.winner);
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
                 id: 'show winner',
                 winnerName: params.winner,
                 prompt: lobby.game.prompt,
-                answer: params.cardText
+                answer: params.cardText,
             });
 
-            //reset the ready counter;
-            //give players control over when
-            //to proceed to the next round
-            lobby.readyCount = 0;
-
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
-                id: 'ready up for next round'
+                id: 'ready up for next round',
             });
 
             break;
@@ -240,15 +238,14 @@ const handleGameEvent = async (params, socket) => {
         }
     }
 
-
-    //PROCEEDING TO THE NEXT ROUND
+    // PROCEEDING TO THE NEXT ROUND
     if (lobby.userList.length >= 1 && lobby.state === 'in game') {
         if (lobby.readyCount === lobby.userList.length) {
             renderGameState(lobby, sessionInfo);
         }
     }
 
-    //START THE GAME
+    // START THE GAME
     // only start games when there's 2+ people ready
     // (although it really isn't fun when there's only 2 people playing)
     if (lobby.userList.length >= 1 && lobby.state === 'waiting') {
@@ -261,7 +258,7 @@ const handleGameEvent = async (params, socket) => {
             );
 
             /* When the class is instantiated, grab a set of white and black cards, representing
-            the 'deck' for the game */
+                  the 'deck' for the game */
             lobby.game.responses = await loadWhite();
             lobby.game.prompts = await loadBlack();
             lobby.state = 'in game';
@@ -378,32 +375,30 @@ const handleCreateLobby = (params, socket) => {
 */
 const socketSetup = (app, sessionMiddleware) => {
     /* To create our Socket.IO server with our Express app, we first
-               need to have the http library create a "server" using our Express
-               app as a template. We then hand that server off to Socket.IO which
-               will generate for us our IO server.
-            */
+                 need to have the http library create a "server" using our Express
+                 app as a template. We then hand that server off to Socket.IO which
+                 will generate for us our IO server.
+              */
     const server = http.createServer(app);
     io = new Server(server);
 
     io.use(wrap(sessionMiddleware));
 
     /*
-               The first event is the 'connection' event, which fires each time a
-               client connects to our server. The event returns a "socket" object
-               which represents their unique connection to our server.
-            */
+                 The first event is the 'connection' event, which fires each time a
+                 client connects to our server. The event returns a "socket" object
+                 which represents their unique connection to our server.
+              */
     io.on('connection', (socket) => {
         console.log('A user has connected!');
 
-
-
         /* With the socket object, we can handle events for that specific
-                        user. For example, the disconnect event fires when the user
-                        disconnects (usually by closing their browser window).
-                        */
+                            user. For example, the disconnect event fires when the user
+                            disconnects (usually by closing their browser window).
+                            */
         socket.on('disconnect', () => {
             console.log('a user disconnected');
-            //cleanupLobby(socket);
+            // cleanupLobby(socket);
         });
 
         /* SOCKET EVENT HANDLERS */
@@ -427,9 +422,9 @@ const socketSetup = (app, sessionMiddleware) => {
     });
 
     /* Finally, after our server is set up,
-          we will return it so that we
-          can start it in app.js.
-          */
+            we will return it so that we
+            can start it in app.js.
+            */
     return server;
 };
 
