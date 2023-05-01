@@ -113,11 +113,11 @@ const renderGameState = (lobby, sessionInfo) => {
       io.to(`${player.name}`).emit('server-events', {
         id: 'you become judge',
       });
-      // the player (uncomment to test hand interface)
-      //   io.to(`${player.name}`).emit('server-events', {
-      //     id: 'start picking cards',
-      //     cards: player.hand,
-      //   });
+      //the player (uncomment to test hand interface)
+        io.to(`${player.name}`).emit('server-events', {
+          id: 'start picking cards',
+          cards: player.hand,
+        });
     } else {
       // the player
       io.to(`${player.name}`).emit('server-events', {
@@ -152,7 +152,6 @@ const handleGameEvent = async (params, socket) => {
 
   //attach socket listener to clean up the lobby when the user disconnects
   socket.on('disconnect', () => {
-    console.log('a user disconnected');
 
     //when the user disconnects, they are removed entirely from the game
     //and the lobby is updated to reflect that

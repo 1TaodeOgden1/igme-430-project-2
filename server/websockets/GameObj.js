@@ -38,7 +38,7 @@ class Game {
         const index = this.players.indexOf(offender);
         const removed = this.players.splice(index, 1);
         //shoud pass the judge role to the next player
-        this.jIndex--;
+        this.jIndex++;
 
         this.nextRound();
     }
@@ -103,6 +103,7 @@ class Game {
             }
 
         });
+        //console.log(obj);
         return obj;
     }
 
