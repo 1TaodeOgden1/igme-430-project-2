@@ -3,6 +3,7 @@ const React = require('react');
 const ReactDOM = require('react-dom');
 const socket = io();
 
+
 //SOCKET EVENTS
 const handleSocketEvent = (event) => {
     switch (event.id) {
