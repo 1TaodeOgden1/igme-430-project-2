@@ -109,10 +109,10 @@ const renderGameState = (lobby, sessionInfo) => {
   // send different events depending on the client user's role
   lobby.game.players.forEach((player) => {
     if (player.isJudge) {
-      // the judge
-      io.to(`${player.name}`).emit('server-events', {
-        id: 'you become judge',
-      });
+      // // the judge
+      // io.to(`${player.name}`).emit('server-events', {
+      //   id: 'you become judge',
+      // });
       //the player (uncomment to test hand interface)
         io.to(`${player.name}`).emit('server-events', {
           id: 'start picking cards',

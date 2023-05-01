@@ -94,16 +94,15 @@ class Game {
     // simply returns a formatted JS object that can
     // easily be processed by the client
     getAllSubmitted() {
-        const obj = this.players.map((player) => {
+        const obj = this.players.map(player => {
             if (!player.isJudge) {
                 return ({
                     name: player.name,
                     submitted: player.chosenCard,
                 });
             }
-
         });
-        //console.log(obj);
+        console.log(obj);
         return obj;
     }
 
