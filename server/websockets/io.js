@@ -6,6 +6,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { Game } = require('./GameObj.js');
 const { loadWhite, loadBlack } = require('./cah_api.js');
+const { render } = require('react-dom');
 
 // max number of users per lobby;
 // stretch goal: users can adjust how many players are in the room
@@ -21,6 +22,8 @@ const lobbies = {
   //     state: 'string'
   // possible states: "waiting" : users are waiting for host to start, new users can join
   //                 "in game" : game in progress, new users CANNOT join
+  //                 "game ended": game ended, new users CANNOT join 
+  //                               and                
   // }
 };
 
@@ -34,42 +37,66 @@ let io;
 // convert a connect middleware to a Socket.IO middleware
 const wrap = (middleware) => (socket, next) => middleware(socket.request, {}, next);
 
-/* This handleChatMessage function takes in a message and "emits" it
-    to a specific channel in our socket.io system. Clients can choose to
-    subscribe to specific channels, as seen in the /hosted/client.js file.
-*/
-const handleChatMessage = (msg) => {
-  io.emit(msg.channel, msg.message);
-};
+//Stretch goal: preserve user's state when they dc or disconnect
+// const handleRejoin = (socket) => {
+//   const sessionInfo = socket.request.session;
+//   const lobby = lobbies[sessionInfo.lobby];
 
-// removes session's reference to the lobby &
-// adjusts the lobby object here
-const cleanupLobby = (socket) => {
+//   if(lobby) {
+//     //rejoining mid-game
+//     if(lobby.game){
+//       const gameObj = lobby.game; 
+//     }
+//   }
+// }
+
+//removes all references to the user in the lobby, and updates the 
+//internal Game object to handle that. 
+const handleLeaver = (socket) => {
   const sessionInfo = socket.request.session;
-  if (sessionInfo) {
-    if (sessionInfo.lobby) {
-      sessionInfo.reload((err) => {
-        if (err) {
-          console.log(err);
-        }
-        sessionInfo.lobby = null;
-        sessionInfo.save();
-      });
+  const lobby = lobbies[sessionInfo.lobby];
+  const username = sessionInfo.account.username;
+
+  if (lobby) {
+    //update the lobby list
+    const userListIndex = lobby.userList.indexOf(username);
+    lobby.userList.splice(userListIndex, 1);
+    //leaving the socket room is automatically handled by Socket
+
+    //destroy the lobby if there's nobody left in it
+    if (lobby.userList.length <= 0) {
+      delete lobbies[sessionInfo.lobby];
+      //leave the method here, as there are no users we need to emit to 
+      //this should avoid processing game logic when the user leaves
+      return;
     }
 
-    socket.to(`${sessionInfo.lobby}`).emit('user left', {
+    //leaving mid game 
+    if (lobby.game) {
+      //ATM, the game will simply go to the next round
+      lobby.game.handleLeaver(username);
 
+      //do nothing to the main interface if 
+      //the user left before a game or at the end of one
+      if (lobby.game.currentRound != lobby.round) {
+        renderGameState(lobby, sessionInfo);
+      }
+
+    }
+
+    //finally, update the remaining users' interface
+    io.to(`${sessionInfo.lobby}`).emit('server-events', {
+      id: 'another user left',
+      userList: lobby.userList,
+      message: 'A user left the lobby!'
     });
 
-    // destroy the lobby
-    delete lobbies[`${sessionInfo.lobby}`];
+    socket.off('disconnect', handleLeaver);
   }
-};
+}
 
-const removeFromLobby = (socket) => {
-  const sessionInfo = socket.request.session;
-};
 
+//this helper method updates each client's interface
 const renderGameState = (lobby, sessionInfo) => {
   // show the status of the game to all clients
   io.to(`${sessionInfo.lobby}`).emit('server-events', {
@@ -87,10 +114,10 @@ const renderGameState = (lobby, sessionInfo) => {
         id: 'you become judge',
       });
       // the player (uncomment to test hand interface)
-    //   io.to(`${player.name}`).emit('server-events', {
-    //     id: 'start picking cards',
-    //     cards: player.hand,
-    //   });
+      //   io.to(`${player.name}`).emit('server-events', {
+      //     id: 'start picking cards',
+      //     cards: player.hand,
+      //   });
     } else {
       // the player
       io.to(`${player.name}`).emit('server-events', {
@@ -103,169 +130,220 @@ const renderGameState = (lobby, sessionInfo) => {
 
 // This is where the majority of the game logic is implemented
 // Essentially, each lobby has a Game class that is manipulated by
+// any user event
 //
 const handleGameEvent = async (params, socket) => {
   const sessionInfo = socket.request.session;
-
   const lobby = lobbies[sessionInfo.lobby];
-  // console.log(sessionInfo);
-  switch (params.user_event) {
-    // the user enters a room
-    case 'entered room': {
-      // if the user was already in a lobby
-      // this code would trigger if the user refreshes the page
-      // or reconnects to the lobby
-      if (sessionInfo.lobby) {
 
+  //if the user did not have the lobby password saved onto their 
+  //session instance via handleJoinLobby / handleCreateLobby 
+  //(e.g. they try to manually access this page),
+  //redirect them back to the main menu
+  if (!lobby) {
+    socket.emit('server-events', {
+      id:"redirect",
+      message:"Unknown error, redirected back to main menu"
+
+    });
+
+    return;
+  }
+
+  //attach socket listener to clean up the lobby when the user disconnects
+  socket.on('disconnect', () => {
+    console.log('a user disconnected');
+
+    //when the user disconnects, they are removed entirely from the game
+    //and the lobby is updated to reflect that
+    handleLeaver(socket);
+  });
+
+
+
+  switch (lobby.state) {
+    //possible user actions while in the waiting room
+    case 'waiting': {
+      switch (params.user_event) {
+        // the user enters a room
+        case 'entered room': {
+
+          // add the user to the lobby's channel
+          socket.join(`${sessionInfo.lobby}`);
+
+          /* also put the user into a special socket room that listens
+                         to user-specific game events */
+          socket.join(`${sessionInfo.account.username}`);
+
+          // tell the client that they are in the looby
+          socket.emit('server-events', {
+            id: 'you joined',
+            userList: lobby.userList,
+            message: 'you were added to lobby',
+
+          });
+
+          // tell the other users that this user has joined
+          socket.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'another user joined',
+            lobbyInfo: this.lobby,
+            userList: lobby.userList,
+            message: 'another player added to lobby',
+          });
+          break;
+        }
+        // the user has declared themselves ready
+        case 'readied': {
+          lobby.readyCount++;
+          break;
+        }
+        // the user has  canceled their readiness
+        case 'unreadied': {
+          lobby.readyCount--;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      // START THE GAME
+      // only start games when there's 2+ people ready
+      // (although it really isn't fun when there's only 2 people playing)
+      if (lobby.userList.length >= 1 && lobby.state === 'waiting') {
+        if (lobby.readyCount === lobby.userList.length) {
+          // add the gameState object to the triggered lobby; this will store
+          // game pertinent info
+          lobby.game = new Game(
+            lobby.userList
+          );
+
+          /* When the class is instantiated, grab a set of white and black cards, representing
+          the 'deck' for the game */
+          lobby.game.responses = await loadWhite();
+          lobby.game.prompts = await loadBlack();
+          lobby.state = 'in game';
+
+          // reset the ready counter;
+          // give players control over when
+          // to proceed to the next round
+          lobby.readyCount = 0;
+          //start up the lobby's game object
+          lobby.game.initializeGame();
+          //and update each client's interface
+          renderGameState(lobby, sessionInfo);
+        }
       }
 
-      // add the user to the lobby's channel
-      socket.join(`${sessionInfo.lobby}`);
-
-      /* also put the user into a special socket room that listens
-                     to user-specific game events */
-      socket.join(`${sessionInfo.account.username}`);
-
-      // tell the client that they are in the looby
-      socket.emit('server-events', {
-        id: 'you joined',
-        userList: lobby.userList,
-        message: 'you were added to lobby',
-
-      });
-
-      // tell the other users that this user has joined
-      socket.to(`${sessionInfo.lobby}`).emit('server-events', {
-        id: 'another user joined',
-        lobbyInfo: this.lobby,
-        userList: lobby.userList,
-        message: 'another player added to lobby',
-      });
       break;
     }
-    // the user has declared themselves ready
-    case 'readied': {
-      lobby.readyCount++;
-      break;
-    }
-    // the user has  canceled their readiness
-    case 'unreadied': {
-      lobby.readyCount--;
-      break;
-    }
-    case 'start round': {
-      renderGameState(lobby, sessionInfo);
-      break;
-    }
-    // when a single player submits a card
-    case 'player presented a card': {
-      // console.log(params.chosenCard);
-      lobby.game.submitCard(
-        sessionInfo.account.username,
-        params.chosenCard,
-      );
 
-      // update each player's user list component
-      io.to(`${sessionInfo.lobby}`).emit('server-events', {
-        id: 'user submitted',
-        userList: lobby.userList,
-      });
+    case 'in game': {
+      switch (params.user_event) {
 
-      // check if all players have submitted a card
-      // once all players have submitted their responses,
-      // switch the judge's view
-      if (lobby.game.allPlayersReady()) {
-        // if so, proceed to the judging phase
-        lobby.game.players.forEach((player) => {
-          // the judge
-          if (player.isJudge) {
-            io.to(`${player.name}`).emit(
-              'server-events',
-              {
-                id: 'pick a winner',
-                choices: lobby.game.getAllSubmitted(),
-              },
-            );
-          } else {
-            // other players
-            io.to(`${player.name}`).emit('server-events', {
-              id: 'wait for the judge',
+        case 'start round': {
+          renderGameState(lobby, sessionInfo);
+          break;
+        }
+        // when a single player submits a card
+        case 'player presented a card': {
+          // console.log(params.chosenCard);
+          lobby.game.submitCard(
+            sessionInfo.account.username,
+            params.chosenCard,
+          );
+
+          // update each player's user list component
+          io.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'user submitted',
+            userList: lobby.userList,
+          });
+
+          // check if all players have submitted a card
+          // once all players have submitted their responses,
+          // switch the judge's view
+          if (lobby.game.allPlayersReady()) {
+            // if so, proceed to the judging phase
+            lobby.game.players.forEach((player) => {
+              // the judge
+              if (player.isJudge) {
+                io.to(`${player.name}`).emit(
+                  'server-events',
+                  {
+                    id: 'pick a winner',
+                    choices: lobby.game.getAllSubmitted(),
+                  },
+                );
+              } else {
+                // other players
+                io.to(`${player.name}`).emit('server-events', {
+                  id: 'wait for the judge',
+                });
+              }
             });
           }
-        });
+
+          break;
+        }
+
+        // when the judge has decided on a winner, update the game instance
+        case 'judge decided': {
+          lobby.game.pickWinner(params.winner);
+          io.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'show winner',
+            winnerName: params.winner,
+            prompt: lobby.game.prompt,
+            answer: params.cardText,
+          });
+
+          //end the game when # of rounds has elapsed
+          if (lobby.game.currentRound === lobby.rounds) {
+            io.to(`${sessionInfo.lobby}`).emit('server-events', {
+              id: 'game over',
+              winner: lobby.game.getOverallWinner()
+            })
+
+          } else {
+            //other proceed to between-round interlude
+            io.to(`${sessionInfo.lobby}`).emit('server-events', {
+              id: 'ready up for next round',
+            });
+
+          }
+
+          break;
+        }
+        // the user has declared themselves ready
+        case 'readied': {
+          lobby.readyCount++;
+          break;
+        }
+        // the user has  canceled their readiness
+        case 'unreadied': {
+          lobby.readyCount--;
+          break;
+        }
       }
-
-      break;
-    }
-
-    // when the judge has decided on a winner, update the game instance
-    case 'judge decided': {
-      lobby.game.pickWinner(params.winner);
-      io.to(`${sessionInfo.lobby}`).emit('server-events', {
-        id: 'show winner',
-        winnerName: params.winner,
-        prompt: lobby.game.prompt,
-        answer: params.cardText,
-      });
-
-      io.to(`${sessionInfo.lobby}`).emit('server-events', {
-        id: 'ready up for next round',
-      });
-
-      break;
-    }
-    // when the player disconnects from / leaves the lobby
-    case 'user left': {
-      // if the user left mid-game
-      if (lobby.game) {
-        // lobby.game.handleLeaver();
+      // PROCEEDING TO THE NEXT ROUND
+      if (lobby.userList.length >= 1 && lobby.state === 'in game') {
+        if (lobby.readyCount === lobby.userList.length) {
+          // reset the ready counter;
+          // give players control over when
+          // to proceed to the next round
+          lobby.readyCount = 0;
+          //update the game object's values for next round
+          lobby.game.nextRound();
+          //update each client's interface
+          renderGameState(lobby, sessionInfo);
+        }
       }
-
       break;
     }
-    default: {
+
+    case 'game ended': {
       break;
     }
   }
 
-  // PROCEEDING TO THE NEXT ROUND
-  if (lobby.userList.length >= 1 && lobby.state === 'in game') {
-    if (lobby.readyCount === lobby.userList.length) {
-      // reset the ready counter;
-      // give players control over when
-      // to proceed to the next round
-      lobby.readyCount = 0;
-      lobby.game.nextRound();
-      renderGameState(lobby, sessionInfo);
-    }
-  }
-
-  // START THE GAME
-  // only start games when there's 2+ people ready
-  // (although it really isn't fun when there's only 2 people playing)
-  if (lobby.userList.length >= 1 && lobby.state === 'waiting') {
-    if (lobby.readyCount === lobby.userList.length) {
-      // add the gameState object to the triggered lobby; this will store
-      // game pertinent info
-      lobby.game = new Game(
-        lobby.userList,
-        lobby.rounds,
-      );
-
-      /* When the class is instantiated, grab a set of white and black cards, representing
-                  the 'deck' for the game */
-      lobby.game.responses = await loadWhite();
-      lobby.game.prompts = await loadBlack();
-      lobby.state = 'in game';
-
-      // reset the ready counter;
-      // give players control over when
-      // to proceed to the next round
-      lobby.readyCount = 0;
-      lobby.game.initializeGame();
-      renderGameState(lobby, sessionInfo);
-    }
-  }
 };
 
 /*
@@ -387,7 +465,6 @@ const socketSetup = (app, sessionMiddleware) => {
                  which represents their unique connection to our server.
               */
   io.on('connection', (socket) => {
-    console.log('A user has connected!');
 
     /* With the socket object, we can handle events for that specific
                             user. For example, the disconnect event fires when the user
@@ -395,11 +472,14 @@ const socketSetup = (app, sessionMiddleware) => {
                             */
     socket.on('disconnect', () => {
       console.log('a user disconnected');
-      // cleanupLobby(socket);
+
+      // //when the user disconnects, they are removed entirely from the game
+      // //and the lobby is updated to reflect that
+      // handleLeaver(socket);
+
     });
 
     /* SOCKET EVENT HANDLERS */
-    socket.on('chat message', handleChatMessage);
 
     // event handler for when the user wants to create a lobby.
     // the user's created password and other lobby params are sent thu the emit call.

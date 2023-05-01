@@ -31,9 +31,17 @@ const requiresLobby = (req, res, next) => {
   return next();
 };
 
+const requiresNotInLobby = (req, res, next) => {
+  if (req.session.lobby) {
+    return res.redirect('/main-menu');
+  }
+  return next();
+}
+
 module.exports.requiresLogin = requiresLogin;
 module.exports.requiresLogout = requiresLogout;
 module.exports.requiresLobby = requiresLobby;
+module.exports.requiresNotInLobby = requiresNotInLobby;
 
 if (process.env.NODE_ENV === 'production') {
   module.exports.requiresSecure = requiresSecure;

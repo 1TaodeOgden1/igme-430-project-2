@@ -3,7 +3,6 @@ const React = require('react');
 const ReactDOM = require('react-dom');
 const socket = io();
 
-
 //SOCKET EVENTS
 const handleSocketEvent = (event) => {
     switch (event.id) {
@@ -82,10 +81,21 @@ const handleSocketEvent = (event) => {
 
             break;
         }
+
+        //whenever a player leaves the room 
+        case 'another user left': {
+            ReactDOM.render(<PlayerList users={event.userList} />,
+            document.getElementById('user_container'));
+            break; 
+        }
         //control to start the next round (beyond first)
         case 'ready up for next round': {
             ReactDOM.render(<WaitingControls ready={false} />,
                 document.getElementById('controls'));
+            break;
+        }
+        case 'redirect': {
+            window.location = '/main-menu';
             break;
         }
     }
@@ -247,6 +257,7 @@ const EndScreen = (props) => {
     return (
         <div id="winScreen">
             <h3>The winner is...</h3>
+            <button id="leave">Leave</button>
         </div>
     )
 }

@@ -65,7 +65,7 @@ const AccountPage = (props) => {
 
             <div id="accountControls">
                 <button id="deleteAccount">Delete Account</button>
-                <button id= "changePassword">Change Password</button>
+                <button id="changePassword">Change Password</button>
             </div>
         </div>
     )
@@ -74,7 +74,7 @@ const AccountPage = (props) => {
 const PassChangeForm = (props) => {
     return (
         <div>
-              <button id="cancelChange" onClick = {loadMainMenu}>Cancel</button>
+            <button id="cancelChange" onClick={loadMainMenu}>Cancel</button>
         </div>
     )
 }
@@ -162,14 +162,9 @@ const init = () => {
 const handleSocketEvent = (event) => {
     switch (event.id) {
         //send the user to the game interface as a player
-        case "joined room": {
-            handleMoveToGame();
-            break;
-        }
-        //send the user to the game interface as the host
+        case "joined room":
         case "created room": {
             handleMoveToGame();
-
             break;
         }
         //returns an error message
