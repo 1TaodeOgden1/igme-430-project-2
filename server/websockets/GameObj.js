@@ -101,8 +101,14 @@ class Game {
                     submitted: player.chosenCard,
                 });
             }
+            else{
+
+            }
         });
-        console.log(obj);
+
+        //filter out the null value, which happens when the 
+        //judge player is passed into the array
+        obj = obj.filter(data => data != undefined); 
         return obj;
     }
 
