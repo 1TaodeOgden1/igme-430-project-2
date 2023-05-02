@@ -21,6 +21,7 @@ html {
 }
 
 
+
 /*User List styling*/
 #userList {
     display: flex;
@@ -40,19 +41,19 @@ html {
     text-align: center;
 }
 
-#p1 {
+#p0 {
     background-color: #1F2F16;
 }
 
-#p2 {
+#p1 {
     background-color: #395B50;
 }
 
-#p3 {
+#p2 {
     background-color: #5A7684;
 }
 
-#p4 {
+#p3 {
     background-color: #92AFD7;
 }
 

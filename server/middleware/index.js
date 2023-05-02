@@ -36,7 +36,7 @@ const requiresNotInLobby = (req, res, next) => {
     return res.redirect('/main-menu');
   }
   return next();
-}
+};
 
 module.exports.requiresLogin = requiresLogin;
 module.exports.requiresLogout = requiresLogout;

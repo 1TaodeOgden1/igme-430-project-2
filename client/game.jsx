@@ -4,6 +4,11 @@ const ReactDOM = require('react-dom');
 const socket = io();
 
 
+//OTHER EVENTS
+const HandleLeaveGame = () => {
+    window.location = '/main-menu';
+    return false;
+}
 //SOCKET EVENTS
 const handleSocketEvent = (event) => {
     switch (event.id) {
@@ -35,6 +40,9 @@ const handleSocketEvent = (event) => {
                 shownPrompt={event.prompt}
                 judgeName={event.judgeName}
             />, document.getElementById('main'));
+
+            ReactDOM.render(<PlayerList users={event.userList} />,
+            document.getElementById('user_container'));
         }
 
         //render the judge's ui for their hand 
@@ -52,8 +60,13 @@ const handleSocketEvent = (event) => {
                 prompt={event.prompt}
                 answer={event.answer} />, document.getElementById('main'));
 
+            //ready button to start next round
             ReactDOM.render(<WaitingControls ready={false} />,
                 document.getElementById('controls'));
+
+            //update the score 
+            ReactDOM.render(<PlayerList users={event.userList} />,
+                document.getElementById('user_container'));
             break;
         }
         //present the user their hand of response cards
@@ -72,22 +85,27 @@ const handleSocketEvent = (event) => {
             break;
         }
         case 'pick a winner': {
-            console.log(event.choices);
             ReactDOM.render(<JudgePickUI choices={event.choices} />,
                 document.getElementById('controls'));
             break;
         }
-        //whenever a user submits a card, reflect this on the user list
-        case 'user submitted': {
+        //whenever the userList in the server's lobby object updates, 
+        //reflect this in the PlayerList component
+        case 'user submitted':
+        case 'player readied':
+        case 'player unreadied':
+        case 'another user left':
+            {
+                ReactDOM.render(<PlayerList users={event.userList} />,
+                    document.getElementById('user_container'));
+                break;
+            }
 
+        //when the final round is completed
+        case 'game over': {
+            ReactDOM.render(<EndGameScreen />,
+                document.getElementById('controls'));
             break;
-        }
-
-        //whenever a player leaves the room 
-        case 'another user left': {
-            ReactDOM.render(<PlayerList users={event.userList} />,
-            document.getElementById('user_container'));
-            break; 
         }
         //control to start the next round (beyond first)
         case 'ready up for next round': {
@@ -96,7 +114,7 @@ const handleSocketEvent = (event) => {
             break;
         }
         case 'redirect': {
-            window.location = '/main-menu';
+            HandleLeaveGame();
             break;
         }
     }
@@ -112,7 +130,7 @@ const GameInterface = (props) => {
             <div class="roundTracker">
                 <h3>Round {props.roundNum}</h3>
             </div>
-            <div class="judgeTracker">Prepare your answer for {props.judgeName}</div>
+            <div class="judgeTracker">Prepare your answer for {props.judgeName}.</div>
             <div class="promptContainer">
                 <div id="prompt">{props.shownPrompt}</div>
             </div>
@@ -124,7 +142,10 @@ const StatusMessage = (props) => {
     //when the user doesn't have any actions yet, 
     //just display a message
     return (
-        <h3 class='status'>{props.message}</h3>
+        <div>
+            <h3 class='status'>{props.message}</h3>
+        </div>
+
     )
 
 }
@@ -133,27 +154,37 @@ const EndRoundScreen = (props) => {
     return (
         <div id="endRound_container">
             <h3>{props.winnerName} won the round!</h3>
-            <h3>Prompt: {props.prompt}</h3>
+            <h3>{props.prompt}</h3>
             <h3>A: {props.answer}</h3>
         </div>
     )
 }
 const PlayerList = (props) => {
     //simple block list of users in lobby
-    let i = 0;
-    const usersAsHTML = props.users.map(user => {
+    let i = -1; //iterating starts at -1 since we have to increment before
+    //the return statement
+    let usersAsHTML = [];
+
+    for (let user in props.users) {
+         //id will affect the item's color
         i++;
-        //id will affect the item's color
-        return (<li id={`p${i}`}><h3>{user}</h3></li>)
-    });
+        usersAsHTML.push(
+        <li id={`p${i}`}>
+            <h3>{Object.keys(props.users)[i]}</h3> 
+            <h2>{props.users[user].score}</h2>
+            <h2>{props.users[user].status}</h2>
+        </li>);
+    }
 
     return (
         <ul id="userList">
+            <button id="leaveButton" onClick={HandleLeaveGame}>
+                Leave Game</button>
             {usersAsHTML}
         </ul>
+
     )
 }
-
 
 const PlayerHand = (props) => {
     //format cards as radio buttons
@@ -254,11 +285,12 @@ const WaitingControls = (props) => {
 
 }
 
-const EndScreen = (props) => {
+const EndGameScreen = (props) => {
     return (
         <div id="winScreen">
-            <h3>The winner is...</h3>
-            <button id="leave">Leave</button>
+            <h1>The winner is {props.winnerName}</h1>
+            <h2>{props.prompt}</h2>
+            <h2>{props.answer}</h2>
         </div>
     )
 }

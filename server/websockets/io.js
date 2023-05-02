@@ -6,7 +6,6 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { Game } = require('./GameObj.js');
 const { loadWhite, loadBlack } = require('./cah_api.js');
-const { render } = require('react-dom');
 
 // max number of users per lobby;
 // stretch goal: users can adjust how many players are in the room
@@ -16,14 +15,20 @@ const lobbies = {
   // a *new* lobby object is formatted as:
   // 'lobbyPassword': {
   //     readyCount: int
-  //     userList: [], //nicknames of each user currently in the lobby
+  //     userList: [], an json storing objects formatted as
+  //        'player username': {
+  //             score:  <int>
+  //             status: <string>
+  //        }
   //     rounds: int,
   //     game: new Game(userList, rounds)
   //     state: 'string'
-  // possible states: "waiting" : users are waiting for host to start, new users can join
-  //                 "in game" : game in progress, new users CANNOT join
-  //                 "game ended": game ended, new users CANNOT join 
-  //                               and                
+  // possible states: "waiting" : users are waiting for host to start, new users can join only
+  //                              in this state
+  //                 "in game" : game in progress,
+  //                  "between rounds": players transitioning between rounds
+  //                 "game ended": game ended,
+  //
   // }
 };
 
@@ -37,7 +42,7 @@ let io;
 // convert a connect middleware to a Socket.IO middleware
 const wrap = (middleware) => (socket, next) => middleware(socket.request, {}, next);
 
-//Stretch goal: preserve user's state when they dc or disconnect
+// Stretch goal: preserve user's state when they dc or disconnect
 // const handleRejoin = (socket) => {
 //   const sessionInfo = socket.request.session;
 //   const lobby = lobbies[sessionInfo.lobby];
@@ -45,65 +50,84 @@ const wrap = (middleware) => (socket, next) => middleware(socket.request, {}, ne
 //   if(lobby) {
 //     //rejoining mid-game
 //     if(lobby.game){
-//       const gameObj = lobby.game; 
+//       const gameObj = lobby.game;
 //     }
 //   }
 // }
 
-//removes all references to the user in the lobby, and updates the 
-//internal Game object to handle that. 
+// removes all references to the user in the lobby, and updates the
+// internal Game object to handle that.
 const handleLeaver = (socket) => {
   const sessionInfo = socket.request.session;
   const lobby = lobbies[sessionInfo.lobby];
-  const username = sessionInfo.account.username;
+  const { username } = sessionInfo.account;
 
   if (lobby) {
-    //update the lobby list
-    const userListIndex = lobby.userList.indexOf(username);
-    lobby.userList.splice(userListIndex, 1);
-    //leaving the socket room is automatically handled by Socket
+    // update the lobby list
+    delete lobby.userList[username];
+    // leaving the socket room is automatically handled by Socket
 
-    //destroy the lobby if there's nobody left in it
-    if (lobby.userList.length <= 0) {
+    // destroy the lobby if there's nobody left in it
+    if (Object.keys(lobby.userList).length <= 0) {
       delete lobbies[sessionInfo.lobby];
-      //leave the method here, as there are no users we need to emit to 
-      //this should avoid processing game logic when the user leaves
+      // leave the method here, as there are no users we need to emit to
+      // this should avoid processing game logic when the user leaves
       return;
     }
 
-    //leaving mid game 
+    // leaving mid game
     if (lobby.game) {
-      //ATM, the game will simply go to the next round
       lobby.game.handleLeaver(username);
 
-      //do nothing to the main interface if 
-      //the user left before a game or at the end of one
-      if (lobby.game.currentRound != lobby.round) {
-        renderGameState(lobby, sessionInfo);
+      if (lobby.game.state === 'in game') {
+        // ATM, the game will simply go to the next round
+        // if the player leaves mid-round
+        if (lobby.game.currentRound !== lobby.round) {
+          // otherwise, proceed to between-round interlude
+          io.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'ready up for next round',
+            leaver: sessionInfo.acocunt.username,
+          });
+
+          lobby.game.state = 'between rounds';
+        }
+        // handle players leaving on the final round
+        if (lobby.game.currentRound === lobby.rounds) {
+          io.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'game over',
+            winner: lobby.game.getOverallWinner(),
+          });
+        }
       }
 
+      // finally, update the remaining users' interfaces
+      io.to(`${sessionInfo.lobby}`).emit('server-events', {
+        id: 'another user left',
+        userList: lobby.userList,
+        message: 'A user left the lobby!',
+      });
+      socket.off('disconnect', handleLeaver);
     }
-
-    //finally, update the remaining users' interface
-    io.to(`${sessionInfo.lobby}`).emit('server-events', {
-      id: 'another user left',
-      userList: lobby.userList,
-      message: 'A user left the lobby!'
-    });
-
-    socket.off('disconnect', handleLeaver);
   }
-}
+};
 
-
-//this helper method updates each client's interface
+// method to render the 'players pick cards to present to judge'
+// portion of the game
 const renderGameState = (lobby, sessionInfo) => {
+  console.log(lobby.userList);
+  // set everyone's status
+  for (let i = 0; i < Object.keys(lobby.userList).length; i++) {
+    const name = Object.keys(lobby.userList)[i];
+    lobby.userList[name].status = 'thinking...';
+  }
+
   // show the status of the game to all clients
   io.to(`${sessionInfo.lobby}`).emit('server-events', {
     id: 'render game state',
     currentRound: lobby.game.currentRound,
     prompt: lobby.game.prompt,
     judgeName: lobby.game.judge,
+    userList: lobby.userList,
   });
 
   // send different events depending on the client user's role
@@ -136,37 +160,32 @@ const handleGameEvent = async (params, socket) => {
   const sessionInfo = socket.request.session;
   const lobby = lobbies[sessionInfo.lobby];
 
-  //if the user did not have the lobby password saved onto their 
-  //session instance via handleJoinLobby / handleCreateLobby 
-  //(e.g. they try to manually access this page),
-  //redirect them back to the main menu
+  // if the user did not have the lobby password saved onto their
+  // session instance via handleJoinLobby / handleCreateLobby
+  // (e.g. they try to manually access this page),
+  // redirect them back to the main menu
   if (!lobby) {
     socket.emit('server-events', {
-      id:"redirect",
-      message:"Unknown error, redirected back to main menu"
-
+      id: 'redirect',
+      message: 'Unknown error, redirected back to main menu',
     });
 
     return;
   }
 
-  //attach socket listener to clean up the lobby when the user disconnects
+  // attach socket listener to clean up the lobby when the user disconnects
   socket.on('disconnect', () => {
-
-    //when the user disconnects, they are removed entirely from the game
-    //and the lobby is updated to reflect that
+    // when the user disconnects, they are removed entirely from the game
+    // and the lobby is updated to reflect that
     handleLeaver(socket);
   });
 
-
-
   switch (lobby.state) {
-    //possible user actions while in the waiting room
+    // possible user actions while in the waiting room
     case 'waiting': {
       switch (params.user_event) {
         // the user enters a room
         case 'entered room': {
-
           // add the user to the lobby's channel
           socket.join(`${sessionInfo.lobby}`);
 
@@ -194,11 +213,22 @@ const handleGameEvent = async (params, socket) => {
         // the user has declared themselves ready
         case 'readied': {
           lobby.readyCount++;
+
+          lobby.userList[sessionInfo.account.username].status = 'ready';
+          io.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'player readied',
+            userList: lobby.userList,
+          });
           break;
         }
         // the user has  canceled their readiness
         case 'unreadied': {
           lobby.readyCount--;
+          lobby.userList[sessionInfo.account.username].status = 'not ready';
+          io.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'player unreadied',
+            userList: lobby.userList,
+          });
           break;
         }
         default: {
@@ -208,12 +238,12 @@ const handleGameEvent = async (params, socket) => {
       // START THE GAME
       // only start games when there's 2+ people ready
       // (although it really isn't fun when there's only 2 people playing)
-      if (lobby.userList.length >= 1 && lobby.state === 'waiting') {
-        if (lobby.readyCount === lobby.userList.length) {
+      if (Object.keys(lobby.userList).length >= 1) {
+        if (lobby.readyCount === Object.keys(lobby.userList).length) {
           // add the gameState object to the triggered lobby; this will store
           // game pertinent info
           lobby.game = new Game(
-            lobby.userList
+            Object.keys(lobby.userList), // send in only the list of username strings
           );
 
           /* When the class is instantiated, grab a set of white and black cards, representing
@@ -226,9 +256,9 @@ const handleGameEvent = async (params, socket) => {
           // give players control over when
           // to proceed to the next round
           lobby.readyCount = 0;
-          //start up the lobby's game object
+          // start up the lobby's game object
           lobby.game.initializeGame();
-          //and update each client's interface
+          // and update each client's interface
           renderGameState(lobby, sessionInfo);
         }
       }
@@ -238,19 +268,19 @@ const handleGameEvent = async (params, socket) => {
 
     case 'in game': {
       switch (params.user_event) {
-
         case 'start round': {
           renderGameState(lobby, sessionInfo);
           break;
         }
         // when a single player submits a card
         case 'player presented a card': {
-          // console.log(params.chosenCard);
           lobby.game.submitCard(
             sessionInfo.account.username,
             params.chosenCard,
           );
 
+          // set status
+          lobby.userList[sessionInfo.account.username].status = 'submitted';
           // update each player's user list component
           io.to(`${sessionInfo.lobby}`).emit('server-events', {
             id: 'user submitted',
@@ -283,10 +313,11 @@ const handleGameEvent = async (params, socket) => {
 
           break;
         }
-
         // when the judge has decided on a winner, update the game instance
         case 'judge decided': {
           lobby.game.pickWinner(params.winner);
+          lobby.userList[params.winner].score++;
+
           io.to(`${sessionInfo.lobby}`).emit('server-events', {
             id: 'show winner',
             winnerName: params.winner,
@@ -294,55 +325,88 @@ const handleGameEvent = async (params, socket) => {
             answer: params.cardText,
           });
 
-          //end the game when # of rounds has elapsed
+          // end the game when # of rounds has elapsed
           if (lobby.game.currentRound === lobby.rounds) {
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
               id: 'game over',
-              winner: lobby.game.getOverallWinner()
-            })
-
+              winner: lobby.game.getOverallWinner(),
+            });
           } else {
-            //other proceed to between-round interlude
+            // otherwise, proceed to between-round interlude
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
               id: 'ready up for next round',
             });
 
+            lobby.game.state = 'between rounds';
           }
 
           break;
         }
+        default: {
+          break;
+        }
+      }
+      break;
+    }
+    // in between rounds; players must all click the ready button
+    // to restart the loop back to 'in game'
+    case 'between rounds': {
+      switch (params.user_event) {
         // the user has declared themselves ready
         case 'readied': {
           lobby.readyCount++;
+
+          // set status
+          lobby.userList[sessionInfo.account.username].status = 'ready';
+
+          io.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'player readied',
+            userList: lobby.userList,
+          });
+
           break;
         }
         // the user has  canceled their readiness
         case 'unreadied': {
           lobby.readyCount--;
+
+          // set status
+          lobby.userList[sessionInfo.account.username].status = 'not ready';
+
+          io.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'player unreadied',
+            userList: lobby.userList,
+          });
+
+          break;
+        }
+        default: {
           break;
         }
       }
       // PROCEEDING TO THE NEXT ROUND
-      if (lobby.userList.length >= 1 && lobby.state === 'in game') {
-        if (lobby.readyCount === lobby.userList.length) {
+      if (Object.keys(lobby.userList).length >= 1) {
+        if (lobby.readyCount === Object.keys(lobby.userList).length) {
           // reset the ready counter;
           // give players control over when
           // to proceed to the next round
           lobby.readyCount = 0;
-          //update the game object's values for next round
+          // update the game object's values for next round
           lobby.game.nextRound();
-          //update each client's interface
+          // update each client's interface
+
           renderGameState(lobby, sessionInfo);
         }
       }
       break;
     }
-
-    case 'game ended': {
+    // there are no unique user actions for this game state;
+    // they can only leave the game at this point
+    case 'game ended':
+    default: {
       break;
     }
   }
-
 };
 
 /*
@@ -380,7 +444,7 @@ const handleJoinLobby = (password, socket) => {
       });
 
       // put the user in the room
-      lobbies[password].userList.push(userSession.account.username);
+      lobbies[password].userList[userSession.account.username] = { score: 0, status: 'not ready' };
 
       // tell the client to start rendering the game interface
       socket.emit('server-events', {
@@ -399,9 +463,6 @@ const handleJoinLobby = (password, socket) => {
 
 // Creates a new lobby object, IF:
 const handleCreateLobby = (params, socket) => {
-  //   console.log(params.roompass);
-  //   console.log(params.gamelength);
-
   // tell the user a room with the same password exists
   if (lobbies[params.roompass]) {
     socket.emit('server-events', {
@@ -414,7 +475,7 @@ const handleCreateLobby = (params, socket) => {
     // broadcast to everyone in the room & save the lobby
     const newLobby = {
       readyCount: 0,
-      userList: [],
+      userList: {},
       rounds: params.gamelength,
       capacity: CAPACITY,
       state: 'waiting',
@@ -424,7 +485,7 @@ const handleCreateLobby = (params, socket) => {
     lobbies[params.roompass] = newLobby;
 
     // put the user in the lobby
-    lobbies[params.roompass].userList.push(userSession.account.username);
+    lobbies[params.roompass].userList[userSession.account.username] = { score: 0, status: 'not ready' };
 
     // and to the user's session
     userSession.reload((err) => {
@@ -464,19 +525,10 @@ const socketSetup = (app, sessionMiddleware) => {
                  which represents their unique connection to our server.
               */
   io.on('connection', (socket) => {
-
     /* With the socket object, we can handle events for that specific
                             user. For example, the disconnect event fires when the user
                             disconnects (usually by closing their browser window).
                             */
-    socket.on('disconnect', () => {
-      console.log('a user disconnected');
-
-      // //when the user disconnects, they are removed entirely from the game
-      // //and the lobby is updated to reflect that
-      // handleLeaver(socket);
-
-    });
 
     /* SOCKET EVENT HANDLERS */
 
