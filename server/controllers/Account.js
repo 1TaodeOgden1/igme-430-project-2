@@ -6,10 +6,6 @@ const loginPage = (req, res) => {
   res.render('login');
 };
 
-const userPage = (req, res) => {
-  res.render('');
-};
-
 const logout = (req, res) => {
   req.session.destroy();
   res.redirect('/');
@@ -49,7 +45,7 @@ const signup = async (req, res) => {
 
   try {
     const hash = await Account.generateHash(pass);
-    const newAccount = new Account({ username, password: hash });
+    const newAccount = new Account({ username, password: hash, wins: 0 });
     await newAccount.save();
     req.session.account = Account.toAPI(newAccount);
     return res.json({ redirect: '/main-menu' });
@@ -62,9 +58,43 @@ const signup = async (req, res) => {
   }
 };
 
+const getAccountData = async (req, res) => {
+  const { username } = req.session.account;
+  const accData = await Account.toJSON(username, () => res.status(404).json({ error: 'Account not found!' }));
+  return res.json(accData);
+};
+
+const ChangeAccountPass = async (req, res) => {
+  const { oldpass } = req.body;
+  const { newpass } = req.body;
+  const { username } = req.session.account;
+
+  if (!oldpass || !newpass) {
+    return res.status(400).json({ error: 'All fields are required!' });
+  }
+
+  if (oldpass === newpass) {
+    return res.status(400).json({ error: 'New password must be different!' });
+  }
+
+  return Account.authenticate(username, oldpass, (err, account) => {
+    if (err || !account) {
+      return res.status(401).json({ error: 'Old password is incorrect!' });
+    }
+
+    Account.UpdatePass(username, newpass);
+
+    // password change successful; log the user out
+    req.session.destroy();
+    return res.json({ redirect: '/' });
+  });
+};
+
 module.exports = {
   loginPage,
   login,
   logout,
   signup,
+  getAccountData,
+  ChangeAccountPass,
 };

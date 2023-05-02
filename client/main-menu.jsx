@@ -30,9 +30,18 @@ const attemptHost = (e) => {
         roompass,
         gamelength,
     }
-
-    //helper.sendPost(e.target.action, { roompass, gamelength });
     socket.emit('makeLobby', params);
+
+    return false;
+}
+
+const attemptChangePassword = (e) => {
+    e.preventDefault();
+
+    const oldpass = document.querySelector('#oldpass').value;
+    const newpass = document.querySelector('#newpass').value;
+
+    helper.sendPost('/change-pass', {oldpass, newpass});
 
     return false;
 }
@@ -52,20 +61,19 @@ const MainMenu = (props) => {
     )
 }
 
-const StorePage = (props) => {
-    //stretch goal
-}
-
 const AccountPage = (props) => {
+    console.log(props);
     //shows user info and game stats, allows user to delete account too
     return (
         <div id="accountPage">
-            <h2>Hello, Username!</h2>
-            <h3>Games Won: #</h3>
+            <h3>Games Won: {props.accData.wins}</h3>
 
             <div id="accountControls">
-                <button id="deleteAccount">Delete Account</button>
-                <button id="changePassword">Change Password</button>
+
+                <button id="changePassword" onClick={() => {
+                    ReactDOM.render(<PassChangeForm />,
+                        document.getElementById('content'));
+                }}>Change Password</button>
             </div>
         </div>
     )
@@ -74,7 +82,28 @@ const AccountPage = (props) => {
 const PassChangeForm = (props) => {
     return (
         <div>
-            <button id="cancelChange" onClick={loadMainMenu}>Cancel</button>
+            <form id="hostForm"
+                name="hostForm"
+                onSubmit={attemptChangePassword}
+                action="/createRoom"
+                method="POST"
+            >
+                <label htmlFor="oldpass">Old Password: </label>
+                <input id="oldpass" type='password' name="oldpass" placeholder='password' />
+
+                <label htmlFor="newpass">New Password: </label>
+                <input id="newpass" type='password' name="newpass" placeholder='password' />
+                <input type="submit" value="Submit" />
+
+            </form >
+
+            <button id="cancelChange" onClick={() => {
+                //re-render the account page, which needs retrieve fro, the database
+                const accountInfo = helper.getData('/account').then(response => {
+                    ReactDOM.render(<AccountPage accData={response} />,
+                        document.getElementById('content'));
+                });
+            }}>Cancel</button>
         </div>
     )
 }
@@ -92,7 +121,7 @@ const HostForm = (props) => {
                 method="POST"
             >
                 <label htmlFor="password">Room Password: </label>
-                <input id="room-pass" type='text' name="password" placeholder='password' />
+                <input id="room-pass" type='password' name="password" placeholder='password' />
                 <label htmlFor="rounds">Game Length: </label>
                 <select name="rounds" id="rounds">
                     <option value='3'>3</option>
@@ -122,7 +151,7 @@ const JoinForm = (props) => {
                 method="POST"
             >
                 <label htmlFor="password">Room Password: </label>
-                <input id="room-pass" type='text' name="password" placeholder='password' />
+                <input id="room-pass" type='password' name="password" placeholder='password' />
                 <input type="submit" value="Submit" />
             </form>
             <div id="errorMessage"></div>
@@ -146,6 +175,29 @@ const loadMainMenu = () => {
 
 //load the main root menu when first loading up the page 
 const init = () => {
+
+    const accountButton = document.querySelector('#viewAccountButton');
+    const playButton = document.querySelector('#playButton');
+
+    playButton.onclick = (e) => {
+        e.preventDefault();
+        ReactDOM.render(
+            <MainMenu />,
+            document.getElementById('content'));
+    }
+
+    accountButton.onclick = async (e) => {
+        e.preventDefault();
+        const accountInfo = helper.getData('/account').then(response => {
+            ReactDOM.render(<AccountPage accData={response} />,
+                document.getElementById('content'));
+        });
+
+        return false;
+
+    }
+
+    //render the main menu screen upon startup 
     ReactDOM.render(
         <MainMenu />,
         document.getElementById('content'));

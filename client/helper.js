@@ -4,7 +4,7 @@
 */
 const handleError = (message) => {
     document.getElementById('errorMessage').textContent = message;
-    document.getElementById('domoMessage').classList.remove('hidden');
+    document.getElementById('errorDiv').classList.remove('hidden');
 };
 
 /* Sends post requests to the server using fetch. Will look for various
@@ -36,9 +36,10 @@ const sendPost = async (url, data, handler) => {
 };
 
 const hideError = () => {
-    document.getElementById('domoMessage').classList.add('hidden');
+    document.getElementById('errorDiv').classList.add('hidden');
 };
 
+//simply a shortcut for a GET request called by the client 
 const getData = async (url) => {
     const response = await fetch(url, {
         method: 'GET',

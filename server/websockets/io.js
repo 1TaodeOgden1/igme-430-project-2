@@ -6,6 +6,9 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { Game } = require('./GameObj.js');
 const { loadWhite, loadBlack } = require('./cah_api.js');
+const models = require('../models');
+
+const { Account } = models;
 
 // max number of users per lobby;
 // stretch goal: users can adjust how many players are in the room
@@ -102,7 +105,6 @@ const handleLeaver = (socket) => {
           id: 'ready up for next round',
           leaver: sessionInfo.account.username,
         });
-
       }
 
       // finally, update the remaining users' interfaces
@@ -141,11 +143,11 @@ const renderGameState = (lobby, sessionInfo) => {
       io.to(`${player.name}`).emit('server-events', {
         id: 'you become judge',
       });
-      //the player (uncomment to test hand interface)
-        io.to(`${player.name}`).emit('server-events', {
-          id: 'start picking cards',
-          cards: player.hand,
-        });
+      // //the player (uncomment to test hand interface)
+      //   io.to(`${player.name}`).emit('server-events', {
+      //     id: 'start picking cards',
+      //     cards: player.hand,
+      //   });
     } else {
       // the player
       io.to(`${player.name}`).emit('server-events', {
@@ -324,18 +326,24 @@ const handleGameEvent = async (params, socket) => {
 
           io.to(`${sessionInfo.lobby}`).emit('server-events', {
             id: 'show winner',
-            winnerName: params.winner,
+            winner: params.winner,
             prompt: lobby.game.prompt,
             answer: params.cardText,
-            userList: lobby.userList
+            userList: lobby.userList,
           });
 
           // end the game when # of rounds has elapsed
-          if (lobby.game.currentRound === lobby.rounds) {
+          if (lobby.game.currentRound >= lobby.rounds) {
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
               id: 'game over',
+              prompt: lobby.game.prompt,
+              answer: params.cardText,
               winner: lobby.game.getOverallWinner(),
             });
+            lobby.state = 'game over';
+
+            // update the client's account model
+            Account.AddWin(params.winner);
           } else {
             // otherwise, proceed to between-round interlude
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
@@ -396,7 +404,7 @@ const handleGameEvent = async (params, socket) => {
           // give players control over when
           // to proceed to the next round
           lobby.readyCount = 0;
-          lobby.state = "in game";
+          lobby.state = 'in game';
           // update the game object's values for next round
           lobby.game.nextRound();
           // update each client's interface

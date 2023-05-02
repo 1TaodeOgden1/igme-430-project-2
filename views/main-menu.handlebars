@@ -9,9 +9,9 @@
 
 <body>
     <nav>
-        <div class="navlink"><a href="/store">Store</a></div>
-        <div class="navlink"><a href="/account">Account</a></div>
-        <div class="navlink"><a href = '/logout'>Logout</a></div>
+        <div class='navlink'><a href='/main-menu' id="playButton">Play</a></div>
+        <div class="navlink"><a href="/account" id="viewAccountButton">Account Settings</a></div>
+        <div class="navlink"><a href='/logout'>Logout</a></div>
     </nav>
     <h1>Cards Against Humanity Online</h1>
     <h2>Welcome, {{username}}</h2>
@@ -21,10 +21,15 @@
         <div><a href="/host">Host Room</a></div>
         <div class="navlink"><a href="/store">Store</a></div> --}}
     </section>
-     <script src="/socket.io/socket.io.js"></script>
+    <div id="errorDiv" class='hidden'>
+
+        <h3><span id="errorMessage"></span></h3>
+
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="/assets/appBundle.js"></script>
     <!--socket io import-->
-   
+
 </body>
 
 </html>

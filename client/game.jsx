@@ -42,7 +42,7 @@ const handleSocketEvent = (event) => {
             />, document.getElementById('main'));
 
             ReactDOM.render(<PlayerList users={event.userList} />,
-            document.getElementById('user_container'));
+                document.getElementById('user_container'));
         }
 
         //render the judge's ui for their hand 
@@ -56,7 +56,7 @@ const handleSocketEvent = (event) => {
 
         case 'show winner': {
             ReactDOM.render(<EndRoundScreen
-                winnerName={event.winnerName}
+                winner={event.winner}
                 prompt={event.prompt}
                 answer={event.answer} />, document.getElementById('main'));
 
@@ -100,10 +100,15 @@ const handleSocketEvent = (event) => {
                     document.getElementById('user_container'));
                 break;
             }
-
         //when the final round is completed
         case 'game over': {
-            ReactDOM.render(<EndGameScreen />,
+            ReactDOM.render(<EndGameScreen
+                prompt={event.prompt}
+                winner={event.winner} 
+                answer={event.answer}/>,
+                document.getElementById('main'));
+
+            ReactDOM.render(<StatusMessage message = "Game's over!"/>,
                 document.getElementById('controls'));
             break;
         }
@@ -153,7 +158,7 @@ const StatusMessage = (props) => {
 const EndRoundScreen = (props) => {
     return (
         <div id="endRound_container">
-            <h3>{props.winnerName} won the round!</h3>
+            <h3>{props.winner} won the round!</h3>
             <h3>{props.prompt}</h3>
             <h3>A: {props.answer}</h3>
         </div>
@@ -166,14 +171,14 @@ const PlayerList = (props) => {
     let usersAsHTML = [];
 
     for (let user in props.users) {
-         //id will affect the item's color
+        //id will affect the item's color
         i++;
         usersAsHTML.push(
-        <li id={`p${i}`}>
-            <h3>{Object.keys(props.users)[i]}</h3> 
-            <h2>{props.users[user].score}</h2>
-            <h2>{props.users[user].status}</h2>
-        </li>);
+            <li id={`p${i}`}>
+                <h3>{Object.keys(props.users)[i]}</h3>
+                <h2>{props.users[user].score}</h2>
+                <h2>{props.users[user].status}</h2>
+            </li>);
     }
 
     return (
@@ -288,9 +293,9 @@ const WaitingControls = (props) => {
 const EndGameScreen = (props) => {
     return (
         <div id="winScreen">
-            <h1>The winner is {props.winnerName}</h1>
+            <h1>The winner is {props.winner}</h1>
             <h2>{props.prompt}</h2>
-            <h2>{props.answer}</h2>
+            <h2>A: {props.answer}</h2>
         </div>
     )
 }

@@ -37,6 +37,10 @@ const AccountSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  wins: {
+    type: Number,
+    required: true,
+  },
 });
 
 // Converts a doc to something we can store in redis later on.
@@ -44,6 +48,7 @@ AccountSchema.statics.toAPI = (doc) => ({
   username: doc.username,
   createdDate: doc.createdDate,
   _id: doc._id,
+  wins: doc.wins,
 });
 
 // Helper function to hash a password
@@ -77,12 +82,24 @@ AccountSchema.statics.toJSON = async (username, callback) => {
   try {
     // since we this method is only called after authentication succeeds, we should
     // always get the correct account
-    const doc = await AccountModel.findOne({ username }).lean().exec();
-    return doc;
+    const doc = await AccountModel.findOne({ username }).exec();
+    return doc.toObject();
   } catch (err) {
     console.log('error!');
     return (callback(err));
   }
+};
+
+AccountSchema.statics.AddWin = async (username) => {
+  const doc = await AccountModel.findOne({ username });
+  doc.wins++;
+  await doc.save();
+};
+
+AccountSchema.statics.UpdatePass = async (username, newpass) => {
+  const doc = await AccountModel.findOne({ username });
+  doc.password = await bcrypt.hash(newpass, saltRounds);
+  await doc.save();
 };
 
 AccountModel = mongoose.model('Account', AccountSchema);
