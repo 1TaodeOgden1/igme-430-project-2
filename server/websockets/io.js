@@ -323,6 +323,7 @@ const handleGameEvent = async (params, socket) => {
             winnerName: params.winner,
             prompt: lobby.game.prompt,
             answer: params.cardText,
+            userList: lobby.userList
           });
 
           // end the game when # of rounds has elapsed
