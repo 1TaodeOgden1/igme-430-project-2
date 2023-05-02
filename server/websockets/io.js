@@ -82,15 +82,7 @@ const handleLeaver = (socket) => {
       if (lobby.game.state === 'in game') {
         // ATM, the game will simply go to the next round
         // if the player leaves mid-round
-        if (lobby.game.currentRound !== lobby.round) {
-          // otherwise, proceed to between-round interlude
-          io.to(`${sessionInfo.lobby}`).emit('server-events', {
-            id: 'ready up for next round',
-            leaver: sessionInfo.acocunt.username,
-          });
 
-          lobby.game.state = 'between rounds';
-        }
         // handle players leaving on the final round
         if (lobby.game.currentRound === lobby.rounds) {
           io.to(`${sessionInfo.lobby}`).emit('server-events', {
@@ -98,6 +90,19 @@ const handleLeaver = (socket) => {
             winner: lobby.game.getOverallWinner(),
           });
         }
+        if (lobby.game.currentRound !== lobby.round) {
+          lobby.game.state = 'between rounds';
+        }
+      }
+
+      if (lobby.game.state) {
+        lobby.readyCount = 0;
+        // otherwise, proceed to between-round interlude
+        io.to(`${sessionInfo.lobby}`).emit('server-events', {
+          id: 'ready up for next round',
+          leaver: sessionInfo.account.username,
+        });
+
       }
 
       // finally, update the remaining users' interfaces
@@ -114,7 +119,6 @@ const handleLeaver = (socket) => {
 // method to render the 'players pick cards to present to judge'
 // portion of the game
 const renderGameState = (lobby, sessionInfo) => {
-  console.log(lobby.userList);
   // set everyone's status
   for (let i = 0; i < Object.keys(lobby.userList).length; i++) {
     const name = Object.keys(lobby.userList)[i];
@@ -137,11 +141,11 @@ const renderGameState = (lobby, sessionInfo) => {
       io.to(`${player.name}`).emit('server-events', {
         id: 'you become judge',
       });
-      // //the player (uncomment to test hand interface)
-      //   io.to(`${player.name}`).emit('server-events', {
-      //     id: 'start picking cards',
-      //     cards: player.hand,
-      //   });
+      //the player (uncomment to test hand interface)
+        io.to(`${player.name}`).emit('server-events', {
+          id: 'start picking cards',
+          cards: player.hand,
+        });
     } else {
       // the player
       io.to(`${player.name}`).emit('server-events', {
@@ -173,19 +177,19 @@ const handleGameEvent = async (params, socket) => {
     return;
   }
 
-  // attach socket listener to clean up the lobby when the user disconnects
-  socket.on('disconnect', () => {
-    // when the user disconnects, they are removed entirely from the game
-    // and the lobby is updated to reflect that
-    handleLeaver(socket);
-  });
-
   switch (lobby.state) {
     // possible user actions while in the waiting room
     case 'waiting': {
       switch (params.user_event) {
         // the user enters a room
         case 'entered room': {
+          // attach socket listener to clean up the lobby when the user disconnects
+          socket.on('disconnect', () => {
+            // when the user disconnects, they are removed entirely from the game
+            // and the lobby is updated to reflect that
+            handleLeaver(socket);
+          });
+
           // add the user to the lobby's channel
           socket.join(`${sessionInfo.lobby}`);
 
@@ -338,7 +342,7 @@ const handleGameEvent = async (params, socket) => {
               id: 'ready up for next round',
             });
 
-            lobby.game.state = 'between rounds';
+            lobby.state = 'between rounds';
           }
 
           break;
@@ -392,6 +396,7 @@ const handleGameEvent = async (params, socket) => {
           // give players control over when
           // to proceed to the next round
           lobby.readyCount = 0;
+          lobby.state = "in game";
           // update the game object's values for next round
           lobby.game.nextRound();
           // update each client's interface

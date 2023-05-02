@@ -93,11 +93,12 @@ class Game {
   getAllSubmitted() {
     let obj = this.players.map((player) => {
       if (!player.isJudge) {
-        return ({
-          name: player.name,
-          submitted: player.chosenCard,
-        });
+       
       }
+      return ({
+        name: player.name,
+        submitted: player.chosenCard,
+      });
       return undefined;
     });
 
