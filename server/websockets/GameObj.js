@@ -117,10 +117,11 @@ class Game {
   // returns the name of the winner for Socket to send back
   getOverallWinner() {
     // https://stackoverflow.com/questions/36941115/return-object-with-highest-value
-    // First, get the max vote from the array of objects
-    const maxScore = Math.max(this.players.map((p) => p.score));
+    // First, get the max score from the array of objects
+    const scores = this.players.map(p => p.score);
+    const maxScore = Math.max(...scores);
 
-    // Get the object having votes as max votes
+    // Get the object with the most score
     const winner = this.players.find((p) => p.score === maxScore);
 
     return (winner.name);
