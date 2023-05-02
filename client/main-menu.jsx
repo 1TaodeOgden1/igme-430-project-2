@@ -24,7 +24,7 @@ const attemptHost = (e) => {
     e.preventDefault();
 
     const roompass = document.querySelector("#room-pass").value;
-    const gamelength = document.querySelector('#rounds').value;
+    const gamelength = parseInt(document.querySelector('#rounds').value);
 
     const params = {
         roompass,
@@ -73,13 +73,13 @@ const AccountPage = (props) => {
                     ReactDOM.render(<PassChangeForm />,
                         document.getElementById('content'));
                 }}>Change Password</button>
-                <input
+                <label htmlFor="oldpass">Premium Mode
+                </label>
+                <input type='checkbox'
                     checked={props.accData.premium}
                     onChange={(e) => {
 
-                    }}>
-                    Premium: {`${props.accData.premium}`}
-                </input>
+                    }} />
             </div>
         </div>
     )
@@ -130,10 +130,10 @@ const HostForm = (props) => {
                 <input id="room-pass" type='password' name="password" placeholder='password' />
                 <label htmlFor="rounds">Game Length: </label>
                 <select name="rounds" id="rounds">
-                    <option value= {3}>3</option>
-                    <option value= {5} selected>5</option>
-                    <option value= {10}>10</option>
-                    <option value= {20}>20</option>
+                    <option value={3}>3</option>
+                    <option value={5} selected>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
                 </select>
                 <input type="submit" value="Submit" />
 

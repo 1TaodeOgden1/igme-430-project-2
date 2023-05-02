@@ -167,7 +167,7 @@ const handleGameEvent = async (params, socket) => {
   // session instance via handleJoinLobby / handleCreateLobby
   // (e.g. they try to manually access this page),
   // redirect them back to the main menu
-  if (!lobby) {
+  if (!lobby || Object.keys(lobby.userList).indexOf(sessionInfo.account.username) === -1) {
     socket.emit('server-events', {
       id: 'redirect',
       message: 'Unknown error, redirected back to main menu',
@@ -331,6 +331,7 @@ const handleGameEvent = async (params, socket) => {
 
           // end the game when # of rounds has elapsed
           if (lobby.game.currentRound >= lobby.rounds) {
+            console.log('we got here');
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
               id: 'game over',
               prompt: lobby.game.prompt,
@@ -341,6 +342,7 @@ const handleGameEvent = async (params, socket) => {
 
             // update the client's account model
             Account.AddWin(lobby.game.getOverallWinner());
+
           } else {
             // otherwise, proceed to between-round interlude
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
