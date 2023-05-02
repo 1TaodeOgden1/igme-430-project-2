@@ -93,12 +93,11 @@ class Game {
   getAllSubmitted() {
     let obj = this.players.map((player) => {
       if (!player.isJudge) {
-
+        return ({
+          name: player.name,
+          submitted: player.chosenCard,
+        });
       }
-      return ({
-        name: player.name,
-        submitted: player.chosenCard,
-      });
       return undefined;
     });
 
@@ -118,7 +117,7 @@ class Game {
   getOverallWinner() {
     // https://stackoverflow.com/questions/36941115/return-object-with-highest-value
     // First, get the max score from the array of objects
-    const scores = this.players.map(p => p.score);
+    const scores = this.players.map((p) => p.score);
     const maxScore = Math.max(...scores);
 
     // Get the object with the most score

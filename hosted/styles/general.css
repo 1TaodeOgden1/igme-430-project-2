@@ -1,0 +1,22 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/*navbars*/ 
+
+nav {
+    display: flex; 
+    position: sticky;
+    height: 7%;
+    background-color: black;
+
+}
+
+.navlink {
+    max-height: 90%;
+}
+

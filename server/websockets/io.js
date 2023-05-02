@@ -78,6 +78,13 @@ const handleLeaver = (socket) => {
       return;
     }
 
+    // leaving in the waiting room
+    if (!lobby.game) {
+      // reset the ready buttons
+      io.to(`${sessionInfo.lobby}`).emit('server-events', {
+        id: 'ready up for next round',
+      });
+    }
     // leaving mid game
     if (lobby.game) {
       lobby.game.handleLeaver(username);
@@ -103,15 +110,14 @@ const handleLeaver = (socket) => {
           lobby.game.state = 'between rounds';
         }
       }
-
-      // finally, update the remaining users' interfaces
-      io.to(`${sessionInfo.lobby}`).emit('server-events', {
-        id: 'another user left',
-        userList: lobby.userList,
-        message: 'A user left the lobby!',
-      });
-      socket.off('disconnect', handleLeaver);
     }
+    // finally, update the remaining users' interfaces
+    io.to(`${sessionInfo.lobby}`).emit('server-events', {
+      id: 'another user left',
+      userList: lobby.userList,
+      message: 'A user left the lobby!',
+    });
+    socket.off('disconnect', handleLeaver);
   }
 };
 
@@ -140,11 +146,11 @@ const renderGameState = (lobby, sessionInfo) => {
       io.to(`${player.name}`).emit('server-events', {
         id: 'you become judge',
       });
-      // the player (uncomment to test hand interface)
-      io.to(`${player.name}`).emit('server-events', {
-        id: 'start picking cards',
-        cards: player.hand,
-      });
+      // the player (uncomment to test hand interface solo)
+      // io.to(`${player.name}`).emit('server-events', {
+      //   id: 'start picking cards',
+      //   cards: player.hand,
+      // });
     } else {
       // the player
       io.to(`${player.name}`).emit('server-events', {
@@ -342,7 +348,6 @@ const handleGameEvent = async (params, socket) => {
 
             // update the client's account model
             Account.AddWin(lobby.game.getOverallWinner());
-
           } else {
             // otherwise, proceed to between-round interlude
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
