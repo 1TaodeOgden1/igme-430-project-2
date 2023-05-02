@@ -85,6 +85,12 @@ const handleLeaver = (socket) => {
       if (lobby.game.state === 'in game') {
         // ATM, the game will simply go to the next round
         // if the player leaves mid-round
+        // otherwise, proceed to between-round interlude
+        lobby.readyCount = 0;
+
+        io.to(`${sessionInfo.lobby}`).emit('server-events', {
+          id: 'ready up for next round',
+        });
 
         // handle players leaving on the final round
         if (lobby.game.currentRound === lobby.rounds) {
@@ -98,14 +104,6 @@ const handleLeaver = (socket) => {
         }
       }
 
-      if (lobby.game.state) {
-        lobby.readyCount = 0;
-        // otherwise, proceed to between-round interlude
-        io.to(`${sessionInfo.lobby}`).emit('server-events', {
-          id: 'ready up for next round',
-          leaver: sessionInfo.account.username,
-        });
-      }
 
       // finally, update the remaining users' interfaces
       io.to(`${sessionInfo.lobby}`).emit('server-events', {
@@ -143,11 +141,11 @@ const renderGameState = (lobby, sessionInfo) => {
       io.to(`${player.name}`).emit('server-events', {
         id: 'you become judge',
       });
-      // //the player (uncomment to test hand interface)
-      //   io.to(`${player.name}`).emit('server-events', {
-      //     id: 'start picking cards',
-      //     cards: player.hand,
-      //   });
+      // the player (uncomment to test hand interface)
+      io.to(`${player.name}`).emit('server-events', {
+        id: 'start picking cards',
+        cards: player.hand,
+      });
     } else {
       // the player
       io.to(`${player.name}`).emit('server-events', {
@@ -343,7 +341,7 @@ const handleGameEvent = async (params, socket) => {
             lobby.state = 'game over';
 
             // update the client's account model
-            Account.AddWin(params.winner);
+            Account.AddWin(lobby.game.getOverallWinner());
           } else {
             // otherwise, proceed to between-round interlude
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
@@ -482,6 +480,13 @@ const handleCreateLobby = (params, socket) => {
     socket.emit('server-events', {
       id: 'failed host',
       message: 'A room with the same password already exists!',
+    });
+
+    // password can't be blank
+  } else if (params.roompass === '') {
+    socket.emit('server-events', {
+      id: 'failed host',
+      message: 'Invalid password!',
     });
   } else {
     // grab the express session context

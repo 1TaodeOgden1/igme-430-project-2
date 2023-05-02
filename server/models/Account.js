@@ -41,6 +41,10 @@ const AccountSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  premium: {
+    type: Boolean,
+    required: true,
+  },
 });
 
 // Converts a doc to something we can store in redis later on.
@@ -49,6 +53,7 @@ AccountSchema.statics.toAPI = (doc) => ({
   createdDate: doc.createdDate,
   _id: doc._id,
   wins: doc.wins,
+  premium: false,
 });
 
 // Helper function to hash a password
@@ -99,6 +104,12 @@ AccountSchema.statics.AddWin = async (username) => {
 AccountSchema.statics.UpdatePass = async (username, newpass) => {
   const doc = await AccountModel.findOne({ username });
   doc.password = await bcrypt.hash(newpass, saltRounds);
+  await doc.save();
+};
+
+AccountSchema.statics.SetPremium = async (username, value) => {
+  const doc = await AccountModel.findOne({ username });
+  doc.premium = value;
   await doc.save();
 };
 

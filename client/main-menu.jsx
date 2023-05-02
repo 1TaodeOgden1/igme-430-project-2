@@ -41,7 +41,7 @@ const attemptChangePassword = (e) => {
     const oldpass = document.querySelector('#oldpass').value;
     const newpass = document.querySelector('#newpass').value;
 
-    helper.sendPost('/change-pass', {oldpass, newpass});
+    helper.sendPost('/change-pass', { oldpass, newpass });
 
     return false;
 }
@@ -62,7 +62,6 @@ const MainMenu = (props) => {
 }
 
 const AccountPage = (props) => {
-    console.log(props);
     //shows user info and game stats, allows user to delete account too
     return (
         <div id="accountPage">
@@ -74,6 +73,13 @@ const AccountPage = (props) => {
                     ReactDOM.render(<PassChangeForm />,
                         document.getElementById('content'));
                 }}>Change Password</button>
+                <input 
+                checked= {props.accData.premium}
+                onChange={(e) => {
+                    
+                }}>
+                    Premium: {`${props.accData.premium}`}
+                </input>
             </div>
         </div>
     )
@@ -188,7 +194,7 @@ const init = () => {
 
     accountButton.onclick = async (e) => {
         e.preventDefault();
-        const accountInfo = helper.getData('/account').then(response => {
+        helper.getData('/account').then(response => {
             ReactDOM.render(<AccountPage accData={response} />,
                 document.getElementById('content'));
         });
