@@ -73,11 +73,11 @@ const AccountPage = (props) => {
                     ReactDOM.render(<PassChangeForm />,
                         document.getElementById('content'));
                 }}>Change Password</button>
-                <input 
-                checked= {props.accData.premium}
-                onChange={(e) => {
-                    
-                }}>
+                <input
+                    checked={props.accData.premium}
+                    onChange={(e) => {
+
+                    }}>
                     Premium: {`${props.accData.premium}`}
                 </input>
             </div>
@@ -130,10 +130,10 @@ const HostForm = (props) => {
                 <input id="room-pass" type='password' name="password" placeholder='password' />
                 <label htmlFor="rounds">Game Length: </label>
                 <select name="rounds" id="rounds">
-                    <option value='3'>3</option>
-                    <option value=" 5" selected>5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
+                    <option value= {3}>3</option>
+                    <option value= {5} selected>5</option>
+                    <option value= {10}>10</option>
+                    <option value= {20}>20</option>
                 </select>
                 <input type="submit" value="Submit" />
 

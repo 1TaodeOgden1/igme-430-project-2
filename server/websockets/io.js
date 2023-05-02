@@ -104,7 +104,6 @@ const handleLeaver = (socket) => {
         }
       }
 
-
       // finally, update the remaining users' interfaces
       io.to(`${sessionInfo.lobby}`).emit('server-events', {
         id: 'another user left',
