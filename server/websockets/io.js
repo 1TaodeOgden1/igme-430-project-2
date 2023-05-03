@@ -105,7 +105,7 @@ const handleLeaver = (socket) => {
         // the game will reset the round
         // if the player leaves mid-round
         lobby.game.currentRound--;
-        
+
         lobby.state = 'between rounds';
         lobby.readyCount = 0;
         io.to(`${sessionInfo.lobby}`).emit('server-events', {
@@ -192,6 +192,7 @@ const handleGameEvent = async (params, socket) => {
             // when the user disconnects, they are removed entirely from the game
             // and the lobby is updated to reflect that
             handleLeaver(socket);
+            return;
           });
 
           // add the user to the lobby's channel
@@ -270,7 +271,6 @@ const handleGameEvent = async (params, socket) => {
           renderGameState(lobby, sessionInfo);
         }
       }
-
       break;
     }
 
