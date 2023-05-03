@@ -104,6 +104,9 @@ const handleSocketEvent = (event) => {
             {
                 ReactDOM.render(<PlayerList users={event.userList} />,
                     document.getElementById('user_container'));
+
+                ReactDOM.render(<StatusMessage message={event.message} />,
+                    document.getElementById('main'));
                 break;
             }
         //when the final round is completed

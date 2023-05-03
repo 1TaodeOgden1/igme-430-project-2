@@ -84,6 +84,9 @@ const handleLeaver = (socket) => {
       io.to(`${sessionInfo.lobby}`).emit('server-events', {
         id: 'ready up for next round',
       });
+
+      lobby.readyCount = 0;
+      setStatusAll(lobby, 'not ready');
     }
     // leaving mid game
     if (lobby.game) {
@@ -117,7 +120,7 @@ const handleLeaver = (socket) => {
     io.to(`${sessionInfo.lobby}`).emit('server-events', {
       id: 'another user left',
       userList: lobby.userList,
-      message: 'A user left the lobby!',
+      message: `${username} left the lobby! Ready up again to continue.`
     });
     socket.off('disconnect', handleLeaver);
   }
