@@ -58,6 +58,15 @@ const wrap = (middleware) => (socket, next) => middleware(socket.request, {}, ne
 //   }
 // }
 
+// shortcut method to set everyone's status to the same value
+const setStatusAll = (lob, status) => {
+  const lobby = lob;
+  for (let i = 0; i < Object.keys(lobby.userList).length; i++) {
+    const name = Object.keys(lobby.userList)[i];
+    lobby.userList[name].status = status;
+  }
+};
+
 // removes all references to the user in the lobby, and updates the
 // internal Game object to handle that.
 const handleLeaver = (socket) => {
@@ -126,14 +135,7 @@ const handleLeaver = (socket) => {
   }
 };
 
-// shortcut method to set everyone's status to the same value
-const setStatusAll = (lob, status) => {
-  const lobby = lob;
-  for (let i = 0; i < Object.keys(lobby.userList).length; i++) {
-    const name = Object.keys(lobby.userList)[i];
-    lobby.userList[name].status = status;
-  }
-};
+
 // method to render the 'players pick cards to present to judge'
 // portion of the game
 const renderGameState = (lobby, sessionInfo) => {
