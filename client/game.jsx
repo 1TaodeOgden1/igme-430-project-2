@@ -104,11 +104,14 @@ const handleSocketEvent = (event) => {
             {
                 ReactDOM.render(<PlayerList users={event.userList} />,
                     document.getElementById('user_container'));
-
-                ReactDOM.render(<StatusMessage message={event.message} />,
-                    document.getElementById('main'));
                 break;
             }
+        case 'another user left': {
+            ReactDOM.render(<PlayerList users={event.userList} />,
+                document.getElementById('user_container'));
+            ReactDOM.render(<StatusMessage message={event.message} />,
+                document.getElementById('main'));
+        }
         //when the final round is completed
         case 'game over': {
             ReactDOM.render(<EndGameScreen

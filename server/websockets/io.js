@@ -129,12 +129,11 @@ const handleLeaver = (socket) => {
     io.to(`${sessionInfo.lobby}`).emit('server-events', {
       id: 'another user left',
       userList: lobby.userList,
-      message: `${username} left the lobby! Ready up again to continue.`
+      message: `${username} left the lobby! Ready up again to continue.`,
     });
     socket.off('disconnect', handleLeaver);
   }
 };
-
 
 // method to render the 'players pick cards to present to judge'
 // portion of the game
