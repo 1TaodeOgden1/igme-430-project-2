@@ -89,11 +89,11 @@ const handleLeaver = (socket) => {
     if (lobby.game) {
       lobby.game.handleLeaver(username);
 
-      if (lobby.game.state === 'in game') {
+      if (lobby.state === 'in game') {
         // ATM, the game will simply go to the next round
         // if the player leaves mid-round
         // otherwise, proceed to between-round interlude
-        
+
         // handle players leaving on the final round
         if (lobby.game.currentRound === lobby.rounds) {
           io.to(`${sessionInfo.lobby}`).emit('server-events', {
@@ -123,7 +123,7 @@ const handleLeaver = (socket) => {
   }
 };
 
-//shortcut method to set everyone's status to the same value
+// shortcut method to set everyone's status to the same value
 const setStatusAll = (lob, status) => {
   const lobby = lob;
   for (let i = 0; i < Object.keys(lobby.userList).length; i++) {
@@ -302,16 +302,15 @@ const handleGameEvent = async (params, socket) => {
             userList: lobby.userList,
           });
 
-          //until all players are ready, tell the submitter to wait
+          // until all players are ready, tell the submitter to wait
           socket.emit('server-events', {
-            id: 'wait for other players'
-          })
+            id: 'wait for other players',
+          });
 
           // check if all players have submitted a card
           // once all players have submitted their responses,
           // switch the judge's view
           if (lobby.game.allPlayersReady()) {
-
             // if so, proceed to the judging phase
             lobby.game.players.forEach((player) => {
               // the judge
@@ -475,11 +474,10 @@ const handleJoinLobby = async (password, socket) => {
       });
 
       // put the user in the room
-      lobbies[password].userList[userSession.account.username] =
-      {
+      lobbies[password].userList[userSession.account.username] = {
         premium: await Account.CheckPremium(userSession.account.username),
         score: 0,
-        status: 'not ready'
+        status: 'not ready',
       };
 
       // tell the client to start rendering the game interface
@@ -531,7 +529,7 @@ const handleCreateLobby = async (params, socket) => {
     lobbies[params.roompass].userList[userSession.account.username] = {
       premium: await Account.CheckPremium(userSession.account.username),
       score: 0,
-      status: 'not ready'
+      status: 'not ready',
     };
 
     // and to the user's session

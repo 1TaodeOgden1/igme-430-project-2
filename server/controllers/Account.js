@@ -94,11 +94,10 @@ const ChangeAccountPass = async (req, res) => {
 
 const TogglePremium = async (req, res) => {
   const value = req.body.state;
-  const username = req.session.account.username; 
+  const { username } = req.session.account;
   const doc = await Account.findByIdAndUpdate(req.session.account._id, { premium: value }, { returnDocument: 'after' });
-
-  const newDoc = await Account.findOne({username});
   
+
   return res.json({ premium: doc.premium });
 };
 
