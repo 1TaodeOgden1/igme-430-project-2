@@ -100,7 +100,6 @@ const handleSocketEvent = (event) => {
         case 'user submitted':
         case 'player readied':
         case 'player unreadied':
-        case 'another user left':
             {
                 ReactDOM.render(<PlayerList users={event.userList} />,
                     document.getElementById('user_container'));
