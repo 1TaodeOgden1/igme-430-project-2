@@ -10,7 +10,7 @@ https://www.restagainsthumanity.com/2.0/
 const loadBlack = async () => {
   const data = await got('https://restagainsthumanity.com/api/v2/cards', {
     searchParams: {
-      packs: 'CAH Base Set',
+      packs: 'CAH Base Set,CAH: First Expansion,CAH: Second Expansion,CAH: Third Expansion',
       pick: 1,
       color: 'black',
       includePackNames: false,
@@ -25,7 +25,7 @@ const loadWhite = async () => {
     'https://restagainsthumanity.com/api/v2/cards',
     {
       searchParams: {
-        packs: 'CAH Base Set',
+        packs: 'CAH Base Set,CAH: First Expansion,CAH: Second Expansion,CAH: Third Expansion',
         color: 'white',
         includePackNames: false,
       },

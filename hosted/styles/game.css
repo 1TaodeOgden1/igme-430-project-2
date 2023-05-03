@@ -23,6 +23,10 @@ body {
     min-width: 50%;
 }
 
+#user_container {
+    overflow-y: auto;
+}
+
 #main {
     grid-area: 1 / 1 / 5 / 7;
 }

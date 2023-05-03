@@ -201,7 +201,6 @@ const PlayerList = (props) => {
                 </div>
             </li>);
     }
-
     return (
         <ul id="userList" class="container m-4">
             <div class='block'>

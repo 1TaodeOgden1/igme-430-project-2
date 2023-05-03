@@ -12,7 +12,7 @@ const { Account } = models;
 
 // max number of users per lobby;
 // stretch goal: users can adjust how many players are in the room
-const CAPACITY = 4;
+const CAPACITY = 10; // 4 is a safe #
 
 const lobbies = {
   // a *new* lobby object is formatted as:
@@ -102,27 +102,15 @@ const handleLeaver = (socket) => {
       lobby.game.handleLeaver(username);
 
       if (lobby.state === 'in game') {
-        // ATM, the game will simply go to the next round
+        // the game will reset the round
         // if the player leaves mid-round
-        // otherwise, proceed to between-round interlude
-
-        // handle players leaving on the final round
-        if (lobby.game.currentRound === lobby.rounds) {
-          io.to(`${sessionInfo.lobby}`).emit('server-events', {
-            id: 'game over',
-            winner: lobby.game.getOverallWinner(),
-
-          });
-
-          Account.AddWin(lobby.game.getOverallWinner());
-        }
-        if (lobby.game.currentRound !== lobby.round) {
-          lobby.state = 'between rounds';
-          lobby.readyCount = 0;
-          io.to(`${sessionInfo.lobby}`).emit('server-events', {
-            id: 'ready up for next round',
-          });
-        }
+        lobby.game.currentRound--;
+        
+        lobby.state = 'between rounds';
+        lobby.readyCount = 0;
+        io.to(`${sessionInfo.lobby}`).emit('server-events', {
+          id: 'ready up for next round',
+        });
       }
     }
     // finally, update the remaining users' interfaces
@@ -131,6 +119,7 @@ const handleLeaver = (socket) => {
       userList: lobby.userList,
       message: `${username} left the lobby! Ready up again to continue.`,
     });
+
     socket.off('disconnect', handleLeaver);
   }
 };
@@ -334,7 +323,6 @@ const handleGameEvent = async (params, socket) => {
               }
             });
           }
-
           setStatusAll(lobby, 'not ready');
 
           break;
@@ -456,7 +444,7 @@ const handleJoinLobby = async (password, socket) => {
         id: 'failed join',
         message: 'Room is full...',
       });
-    } else if (lobbies[password].state === 'in game') {
+    } else if (lobbies[password].state !== 'waiting') {
       // AND the game hasn't started
       socket.emit('server-events', {
         id: 'failed join',
