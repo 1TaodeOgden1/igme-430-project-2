@@ -93,21 +93,23 @@ const handleLeaver = (socket) => {
         // ATM, the game will simply go to the next round
         // if the player leaves mid-round
         // otherwise, proceed to between-round interlude
-        lobby.readyCount = 0;
-
-        io.to(`${sessionInfo.lobby}`).emit('server-events', {
-          id: 'ready up for next round',
-        });
-
+        
         // handle players leaving on the final round
         if (lobby.game.currentRound === lobby.rounds) {
           io.to(`${sessionInfo.lobby}`).emit('server-events', {
             id: 'game over',
             winner: lobby.game.getOverallWinner(),
+
           });
+
+          Account.AddWin(lobby.game.getOverallWinner());
         }
         if (lobby.game.currentRound !== lobby.round) {
-          lobby.game.state = 'between rounds';
+          lobby.state = 'between rounds';
+          lobby.readyCount = 0;
+          io.to(`${sessionInfo.lobby}`).emit('server-events', {
+            id: 'ready up for next round',
+          });
         }
       }
     }
