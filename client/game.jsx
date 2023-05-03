@@ -84,6 +84,12 @@ const handleSocketEvent = (event) => {
                 document.getElementById('controls'));
             break;
         }
+        case 'wait for other players': {
+            ReactDOM.render(<StatusMessage
+                message="Wait for other players to submit." />,
+                document.getElementById('controls'));
+            break;
+        }
         case 'pick a winner': {
             ReactDOM.render(<JudgePickUI choices={event.choices} />,
                 document.getElementById('controls'));
@@ -104,11 +110,11 @@ const handleSocketEvent = (event) => {
         case 'game over': {
             ReactDOM.render(<EndGameScreen
                 prompt={event.prompt}
-                winner={event.winner} 
-                answer={event.answer}/>,
+                winner={event.winner}
+                answer={event.answer} />,
                 document.getElementById('main'));
 
-            ReactDOM.render(<StatusMessage message = "Game's over!"/>,
+            ReactDOM.render(<StatusMessage message="Game's over!" />,
                 document.getElementById('controls'));
             break;
         }
@@ -131,13 +137,13 @@ const handleSocketEvent = (event) => {
 const GameInterface = (props) => {
     //gameplay screen
     return (
-        <div id="gameplayScreen">
+        <div id="gameplayScreen" class='container is-flex is-flex-direction-column'>
             <div class="roundTracker">
-                <h3>Round {props.roundNum}</h3>
+                <h1 class="is-size-6">Round {props.roundNum}</h1>
             </div>
-            <div class="judgeTracker">Prepare your answer for {props.judgeName}.</div>
+            <div class="judgeTracker is-size-5">Prepare your answer for {props.judgeName}.</div>
             <div class="promptContainer">
-                <div id="prompt">{props.shownPrompt}</div>
+                <h1 id="prompt" class='title has-text-centered'>{props.shownPrompt}</h1>
             </div>
         </div>
     )
@@ -148,19 +154,18 @@ const StatusMessage = (props) => {
     //just display a message
     return (
         <div>
-            <h3 class='status'>{props.message}</h3>
+            <h3 class='is-size-4'>{props.message}</h3>
         </div>
-
     )
 
 }
 
 const EndRoundScreen = (props) => {
     return (
-        <div id="endRound_container">
+        <div id="endRound_container" class='container is-flex is-flex-direction-column'>
             <h3>{props.winner} won the round!</h3>
-            <h3>{props.prompt}</h3>
-            <h3>A: {props.answer}</h3>
+            <h3 class='is-size-3 has-text-centered'>{props.prompt}</h3>
+            <h3 class='is-size-4 has-text-centered'>A: {props.answer}</h3>
         </div>
     )
 }
@@ -169,22 +174,35 @@ const PlayerList = (props) => {
     let i = -1; //iterating starts at -1 since we have to increment before
     //the return statement
     let usersAsHTML = [];
-
     for (let user in props.users) {
         //id will affect the item's color
         i++;
+
+        let crownDiv = (<div hidden></div>);
+
+        if (props.users[user].premium) {
+            crownDiv = <span class="icon">
+                <i class="fa-solid fa-crown"></i>
+            </span>
+        }
+
         usersAsHTML.push(
-            <li id={`p${i}`}>
-                <h3>{Object.keys(props.users)[i]}</h3>
-                <h2>{props.users[user].score}</h2>
-                <h2>{props.users[user].status}</h2>
+            <li class='columns'>
+                <div id={`p${i}`} class='column is-one-fith has-text-centered'>
+                    <h2 class='has-text-weight-semibold'>{props.users[user].score}</h2>
+                </div>
+                <div class='column is-four-fifths'>
+                    <h2 class=''>{Object.keys(props.users)[i]} {crownDiv} - {props.users[user].status}</h2>
+                </div>
             </li>);
     }
 
     return (
-        <ul id="userList">
-            <button id="leaveButton" onClick={HandleLeaveGame}>
-                Leave Game</button>
+        <ul id="userList" class="container m-4">
+            <div class='block'>
+                <button class='button is-danger is-light' id="leaveButton" onClick={HandleLeaveGame}>
+                    Leave Game</button>
+            </div>
             {usersAsHTML}
         </ul>
 
@@ -195,29 +213,31 @@ const PlayerHand = (props) => {
     //format cards as radio buttons
     const cardsAsHTML = props.cards.map(card => {
         return (
-            <label class="container">
-                <input type="radio" name="card_to_submit" value={`${card}`} />
-                {card}
+            <label class="radio is-flex mb-1" id="card">
+                <input class='mr-2' type="radio" name="card_to_submit" value={`${card}`} />
+                <h3 class='is-size-6'>{card}</h3>
             </label>
         )
     });
 
     //tbd useEffect to grab checked radio button
     return (
-        <div id="hand">
-            <div id='cards'>
-                {cardsAsHTML}
+        <div class='columns'>
+            <div id='cards' class='block column is-three-quarters'>
+                <div class='is-flex is-flex-wrap-wrap'>
+                    {cardsAsHTML}
+                </div>
             </div>
-            <div id="submit-container">
-                <button id='submitCard' onClick={(e) => {
-                    socket.emit('user event', {
-                        user_event: 'player presented a card',
-                        chosenCard: document.querySelector('#cards input:checked').value
-                    })
-                }
-                }>Submit</button>
-            </div>
+
+            <button class='button block is-primary is-outlined column is-one-fifth' id='submitCard' onClick={(e) => {
+                socket.emit('user event', {
+                    user_event: 'player presented a card',
+                    chosenCard: document.querySelector('#cards input:checked').value
+                })
+            }
+            }>Submit</button>
         </div>
+
 
     )
 }
@@ -226,11 +246,11 @@ const JudgePickUI = (props) => {
     //format submissions as radio buttons
     const choicesAsHTML = props.choices.map(choice => {
         return (
-            <label class="container">
-                <input type="radio" name="submitted_response"
-                    value={`${choice.name}`}
-                    data-choice={`${choice.submitted}`} />{choice.submitted}
+            <label class="radio is-flex mb-1 block" id="card">
+                <input class='mr-2' type="radio" name="submitted_response" value={`${choice.name}`} data-choice={`${choice.submitted}`} />
+                <h3 class='is-size-6'>{choice.submitted}</h3>
             </label>
+
         )
     });
     return (
@@ -238,7 +258,8 @@ const JudgePickUI = (props) => {
             <div id='submissions'>
                 {choicesAsHTML}
             </div>
-            <button id="confirm" onClick={(e) => {
+
+            <button class='button block is-primary is-outlined' id="confirm" onClick={(e) => {
                 const cardText = document.querySelector('#submissions input:checked').dataset.choice;
                 const winner = document.querySelector('#submissions input:checked').value
                 if (cardText && winner) {
@@ -257,10 +278,9 @@ const JudgePickUI = (props) => {
 
 const WaitingControls = (props) => {
     const [isReady, toggleReady] = React.useState(props.ready);
-
     if (isReady) {
         return (
-            <button id="readyButton"
+            <button id="readyButton" class='button is-large is-warning has text-black m-auto'
                 onClick={() => {
                     toggleReady(props.ready);
                     socket.emit('user event', {
@@ -274,7 +294,7 @@ const WaitingControls = (props) => {
     }
     else {
         return (
-            <button id="readyButton"
+            <button id="readyButton" class='button is-large is-success has text-black m-auto'
                 onClick={() => {
                     toggleReady(!props.ready)
                     socket.emit('user event', {
@@ -292,13 +312,14 @@ const WaitingControls = (props) => {
 
 const EndGameScreen = (props) => {
     return (
-        <div id="winScreen">
-            <h1>The winner is {props.winner}</h1>
-            <h2>{props.prompt}</h2>
-            <h2>A: {props.answer}</h2>
-        </div>
+        < div id="winScreen" class='container is-flex is-flex-direction-column' >
+            <h1 class='title has-text-centered'>{props.winner} won the game!</h1>
+            <h2 class='is-size-5 has-text-centered'>{props.prompt}</h2>
+            <h3 class='is-size-6 has-text-centered'>A: {props.answer}</h3>
+        </div >
     )
 }
+
 const init = () => {
     //we listen to the socket server to tell us what to render
     socket.on('server-events', handleSocketEvent);

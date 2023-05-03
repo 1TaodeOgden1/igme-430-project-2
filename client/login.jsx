@@ -9,6 +9,9 @@ const handleLogin = (e) => {
     const username = e.target.querySelector('#user').value;
     const pass = e.target.querySelector('#pass').value;
 
+    //clear pass field
+    e.target.querySelector('#pass').value = '';
+
     if (!username || !pass) {
         helper.handleError('Username or password is empty!');
         return false;
@@ -26,6 +29,12 @@ const handleSignup = (e) => {
     const username = e.target.querySelector('#user').value;
     const pass = e.target.querySelector('#pass').value;
     const pass2 = e.target.querySelector('#pass2').value;
+
+    //clear pass field
+    e.target.querySelector('#pass').value = '';
+    e.target.querySelector('#pass2').value = '';
+
+
 
     if (!username || !pass || !pass2) {
         helper.handleError('All fields are required!');
@@ -49,13 +58,25 @@ const LoginWindow = (props) => {
             onSubmit={handleLogin}
             action='/login'
             method="POST"
-            className="mainForm"
-        >
-            <label htmlFor="username">Username: </label>
-            <input id="user" type="text" name="username" placeholder='username' />
-            <label htmlFor="pass">Password: </label>
-            <input id='pass' type='password' name='pass' placeholder='password' />
-            <input className='formSubmit' type="submit" value="Sign in" />
+            class="block is-flex is-flex-direction-column m-1 columns is-justify-content-center">
+            <h1 class="title has-text-black">Log in</h1>
+            <div id="errorDiv" class='hidden'>
+                <h3 class='has-text-danger-dark is-size-6 block'><span id="errorMessage"></span></h3>
+            </div>
+            <div class='block'>
+                <div class='block'>
+                    <div class="label">Username:</div>
+                    <input id="user" type="text" name="username" placeholder='username' class=" column is-full" />
+                </div>
+                <div class='block'>
+                    <div class="label">Password:</div>
+                    <input id='pass' type='password' name='pass' placeholder='password' class=" column is-full" />
+                </div>
+            </div>
+            <div class='control p-auto'>
+                <button class="button is-link" type='submit'>Sign in</button>
+            </div>
+
         </form>
     );
 };
@@ -67,14 +88,28 @@ const SignupWindow = (props) => {
             onSubmit={handleSignup}
             action='/signup'
             method="POST"
-            className="mainForm">
-            <label htmlFor="username">Username: </label>
-            <input id="user" type="text" name="username" placeholder='username' />
-            <label htmlFor="pass">Password: </label>
-            <input id='pass' type='password' name='pass' placeholder='password' />
-            <label htmlFor="pass2">Confirm Password: </label>
-            <input id='pass2' type='password' name='pass2' placeholder='retype password' />
-            <input className='formSubmit' type="submit" value="Sign up" />
+            class="block is-flex is-flex-direction-column m-1 columns is-justify-content-center">
+            <h1 class="title has-text-black">Sign up</h1>
+            <div id="errorDiv" class='hidden'>
+                <h3 class='has-text-danger-dark is-size-6 block'><span id="errorMessage"></span></h3>
+            </div>
+            <div class='block'>
+                <div class='block'>
+                    <div class="label">Enter a username:</div>
+                    <input id="user" type="text" name="username" placeholder='username' class=" column is-full" />
+                </div>
+                <div class='block'>
+                    <div class="label">Enter your password:</div>
+                    <input id='pass' type='password' name='pass' placeholder='password' class=" column is-full" />
+                </div>
+                <div class='block'>
+                    <div class="label">Confirm password:</div>
+                    <input id='pass2' type='password' name='pass2' placeholder='retype password' class=" column is-full" />
+                </div>
+            </div>
+            <div class='control'>
+                <button class="button is-link" type='submit'>Submit</button>
+            </div>
         </form>
     )
 }

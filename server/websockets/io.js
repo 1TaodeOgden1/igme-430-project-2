@@ -121,15 +121,19 @@ const handleLeaver = (socket) => {
   }
 };
 
+//shortcut method to set everyone's status to the same value
+const setStatusAll = (lob, status) => {
+  const lobby = lob;
+  for (let i = 0; i < Object.keys(lobby.userList).length; i++) {
+    const name = Object.keys(lobby.userList)[i];
+    lobby.userList[name].status = status;
+  }
+};
 // method to render the 'players pick cards to present to judge'
 // portion of the game
 const renderGameState = (lobby, sessionInfo) => {
   // set everyone's status
-  for (let i = 0; i < Object.keys(lobby.userList).length; i++) {
-    const name = Object.keys(lobby.userList)[i];
-    lobby.userList[name].status = 'thinking...';
-  }
-
+  setStatusAll(lobby, 'thinking...');
   // show the status of the game to all clients
   io.to(`${sessionInfo.lobby}`).emit('server-events', {
     id: 'render game state',
@@ -146,7 +150,7 @@ const renderGameState = (lobby, sessionInfo) => {
       io.to(`${player.name}`).emit('server-events', {
         id: 'you become judge',
       });
-      // the player (uncomment to test hand interface solo)
+      // // the player (uncomment to test hand interface solo)
       // io.to(`${player.name}`).emit('server-events', {
       //   id: 'start picking cards',
       //   cards: player.hand,
@@ -296,10 +300,16 @@ const handleGameEvent = async (params, socket) => {
             userList: lobby.userList,
           });
 
+          //until all players are ready, tell the submitter to wait
+          socket.emit('server-events', {
+            id: 'wait for other players'
+          })
+
           // check if all players have submitted a card
           // once all players have submitted their responses,
           // switch the judge's view
           if (lobby.game.allPlayersReady()) {
+
             // if so, proceed to the judging phase
             lobby.game.players.forEach((player) => {
               // the judge
@@ -320,6 +330,8 @@ const handleGameEvent = async (params, socket) => {
             });
           }
 
+          setStatusAll(lobby, 'not ready');
+
           break;
         }
         // when the judge has decided on a winner, update the game instance
@@ -337,7 +349,6 @@ const handleGameEvent = async (params, socket) => {
 
           // end the game when # of rounds has elapsed
           if (lobby.game.currentRound >= lobby.rounds) {
-            console.log('we got here');
             io.to(`${sessionInfo.lobby}`).emit('server-events', {
               id: 'game over',
               prompt: lobby.game.prompt,
@@ -430,7 +441,7 @@ const handleGameEvent = async (params, socket) => {
 /*
 
 */
-const handleJoinLobby = (password, socket) => {
+const handleJoinLobby = async (password, socket) => {
   // console.log(password);
   // if the password is correct and the lobby exists
   if (lobbies[password]) {
@@ -462,7 +473,12 @@ const handleJoinLobby = (password, socket) => {
       });
 
       // put the user in the room
-      lobbies[password].userList[userSession.account.username] = { score: 0, status: 'not ready' };
+      lobbies[password].userList[userSession.account.username] =
+      {
+        premium: await Account.CheckPremium(userSession.account.username),
+        score: 0,
+        status: 'not ready'
+      };
 
       // tell the client to start rendering the game interface
       socket.emit('server-events', {
@@ -474,13 +490,13 @@ const handleJoinLobby = (password, socket) => {
     // room doesn't exist or the user didn't enter a correct password
     socket.emit('server-events', {
       id: 'failed join',
-      message: "Incorrect password / Room with password doesn't exist!",
+      message: "Room with password doesn't exist!",
     });
   }
 };
 
 // Creates a new lobby object, IF:
-const handleCreateLobby = (params, socket) => {
+const handleCreateLobby = async (params, socket) => {
   // tell the user a room with the same password exists
   if (lobbies[params.roompass]) {
     socket.emit('server-events', {
@@ -510,7 +526,11 @@ const handleCreateLobby = (params, socket) => {
     lobbies[params.roompass] = newLobby;
 
     // put the user in the lobby
-    lobbies[params.roompass].userList[userSession.account.username] = { score: 0, status: 'not ready' };
+    lobbies[params.roompass].userList[userSession.account.username] = {
+      premium: await Account.CheckPremium(userSession.account.username),
+      score: 0,
+      status: 'not ready'
+    };
 
     // and to the user's session
     userSession.reload((err) => {

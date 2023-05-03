@@ -11,7 +11,6 @@ const socket = io();
 //the room with the entered password exists & the room isn't full (cap = 4)
 const attemptJoin = (e) => {
     e.preventDefault();
-
     const roompass = e.target.querySelector('#room-pass').value;
 
     //send the password to the socket code in the server
@@ -22,7 +21,6 @@ const attemptJoin = (e) => {
 
 const attemptHost = (e) => {
     e.preventDefault();
-
     const roompass = document.querySelector("#room-pass").value;
     const gamelength = parseInt(document.querySelector('#rounds').value);
 
@@ -42,7 +40,6 @@ const attemptChangePassword = (e) => {
     const newpass = document.querySelector('#newpass').value;
 
     helper.sendPost('/change-pass', { oldpass, newpass });
-
     return false;
 }
 
@@ -54,34 +51,54 @@ const handleMoveToGame = async () => {
 const MainMenu = (props) => {
     //main menu
     return (
-        <div id="mainMenu">
-            <button id="join" onClick={loadJoinForm}>Join Room</button>
-            <button id="host" onClick={loadHostForm}>Host Room</button>
+        <div id="mainMenu" class='columns is-flex-direction-column is-align-items-center columns'>
+            <button class='button block is-large is-danger is-outlined column is-fullwidth' id="join" onClick={loadJoinForm}>Join Room</button>
+            <button class='button block is-large is-danger is-outlined column is-fullwidth' id="host" onClick={loadHostForm}>Host Room</button>
         </div>
     )
 }
 
 const AccountPage = (props) => {
+    const [checked, setChecked] = React.useState(props.accData.premium);
     //shows user info and game stats, allows user to delete account too
     return (
-        <div id="accountPage">
-            <h3>Games Won: {props.accData.wins}</h3>
+        <div id="accountPage" class="container is-flex is-flex-direction-column">
+            <div class="title block is-size-1 has-text-centered"> {props.accData.wins}</div>
+
+            <h3 class="subtitle has-text-centered">Games Won</h3>
 
             <div id="accountControls">
 
-                <button id="changePassword" onClick={() => {
+                <button class="button block is-large is-danger is-outlined column is-fullwidth" id="changePassword" onClick={() => {
                     ReactDOM.render(<PassChangeForm />,
                         document.getElementById('content'));
                 }}>Change Password</button>
-                <label htmlFor="oldpass">Premium Mode
-                </label>
-                <input type='checkbox'
-                    checked={props.accData.premium}
-                    onChange={(e) => {
 
-                    }} />
+                <label class="checkbox">
+                    <label class="subtitle is-size-4 has-text-warning" htmlFor="oldpass">Premium Mode</label>
+                    <input class="block" type='checkbox'
+                        checked={checked}
+                        onChange={async (e) => {
+                            const response = await fetch('/setPremium',
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ state: e.currentTarget.checked }),
+                                });
+
+                            const data = await response.json();
+                            setChecked(data.premium);
+                        }} />
+
+
+                </label>
+                <h3 class='has-text-centered'>You will get a <span class="icon">
+                    <i class="fa-solid fa-crown"></i></span></h3>
             </div>
-        </div>
+
+        </div >
     )
 }
 
@@ -93,23 +110,42 @@ const PassChangeForm = (props) => {
                 onSubmit={attemptChangePassword}
                 action="/createRoom"
                 method="POST"
+                class="columns is-flex is-flex-direction-column"
             >
-                <label htmlFor="oldpass">Old Password: </label>
-                <input id="oldpass" type='password' name="oldpass" placeholder='password' />
+                <div class='column is-full'>
+                    <label class='label has-text-light' htmlFor="oldpass">Old Password: </label>
+                    <input class="input column is-full" id="oldpass" type='password' name="oldpass" placeholder='password' /></div>
+                <div class='column is-full'>
+                    <label class='label has-text-light' htmlFor="newpass">New Password: </label>
+                    <input class="input column is-full" id="newpass" type='password' name="newpass" placeholder='password' />
+                </div>
+                <div class='column is-full'>
+                    <div class="columns is-flex is-justify-content-center">
+                        <div class="column is-two-fifths">
+                            <button class=' button block is-info is-outlined button' id="cancelChange" onClick={() => {
+                                //re-render the account page, which needs retrieve fro, the database
+                                const accountInfo = helper.getData('/account').then(response => {
+                                    ReactDOM.render(<AccountPage accData={response} />,
+                                        document.getElementById('content'));
+                                });
+                            }}>Cancel</button>
 
-                <label htmlFor="newpass">New Password: </label>
-                <input id="newpass" type='password' name="newpass" placeholder='password' />
-                <input type="submit" value="Submit" />
+                        </div>
+                        <div class="column is-two-fifths ">
+                            <input class='button block is-primary is-outlined' type="submit" value="Submit" />
+                        </div>
+
+                    </div>
+                </div>
+                <div class="column is-full">
+                    <div id="errorDiv" class='hidden'>
+                        <h3 class='has-text-danger-dark is-size-4 block'><span id="errorMessage"></span></h3>
+                    </div>
+                </div>
 
             </form >
 
-            <button id="cancelChange" onClick={() => {
-                //re-render the account page, which needs retrieve fro, the database
-                const accountInfo = helper.getData('/account').then(response => {
-                    ReactDOM.render(<AccountPage accData={response} />,
-                        document.getElementById('content'));
-                });
-            }}>Cancel</button>
+
         </div>
     )
 }
@@ -125,21 +161,35 @@ const HostForm = (props) => {
                 onSubmit={attemptHost}
                 action="/createRoom"
                 method="POST"
+                class="columns is-flex is-flex-direction-column"
             >
-                <label htmlFor="password">Room Password: </label>
-                <input id="room-pass" type='password' name="password" placeholder='password' />
-                <label htmlFor="rounds">Game Length: </label>
-                <select name="rounds" id="rounds">
-                    <option value={3}>3</option>
-                    <option value={5} selected>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                </select>
-                <input type="submit" value="Submit" />
+                <h1 class="title is-size-4">Host a Lobby</h1>
+                <div class='columns'>
+                    <div class="column is-two-thirds">
+                        <label htmlFor="password">Room Password: </label>
+                        <input class="input" id="room-pass" type='password' name="password" placeholder='password' />
+                    </div>
+                    <div class="column is-one-thirds has-text-right">
+                        <label htmlFor="rounds">Max Rounds: </label>
+                        <div class="select" >
+                            <select name="rounds" id='rounds'>
+                                <option value={3}>3</option>
+                                <option value={5} selected>5</option>
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
+                <input class="button block is-primary is-outlined" type="submit" value="Submit" />
+                <button class="button block is-info is-outlined" id="backtomain" onClick={loadMainMenu}>Back</button>
+                <div class="column is-full">
+                    <div id="errorDiv" class='hidden'>
+                        <h3 class='has-text-danger-dark  is-size-6  block'><span id="errorMessage"></span></h3>
+                    </div>
+                </div>
             </form >
-            <div id="errorMessage"></div>
-            <button id="backtomain" onClick={loadMainMenu}>Back</button>
         </div>
 
     )
@@ -150,18 +200,37 @@ const JoinForm = (props) => {
     //they simply enter the room's password
     return (
         <div>
+            <h1 class="title is-size-4">Join a Lobby</h1>
+            <h1 class="subtitle">Enter the room's password</h1>
+
             <form id='joinForm'
                 name="joinForm"
                 onSubmit={attemptJoin}
                 action="/joinRoom"
                 method="POST"
+                class="columns is-flex is-flex-direction-column"
             >
-                <label htmlFor="password">Room Password: </label>
-                <input id="room-pass" type='password' name="password" placeholder='password' />
-                <input type="submit" value="Submit" />
+                <div class='column is-full'>
+                    <div class='columns'>
+                        <div class='column is-two-thirds'>
+                            <input class="input" id="room-pass" type='password' name="password" placeholder='password' />
+                        </div>
+                        <div class='column is-one-third has-text-right container'>
+                            <input class="button block is-primary is-outlined" type="submit" value="Submit" />
+                        </div>
+                    </div>
+                </div>
+                <div class='column is-full'>
+                    <button id="backtomain" class="button block is-info is-outlined" onClick={loadMainMenu}>Back</button>
+                </div>
+                <div class='column is-full'>
+                    <div id="errorDiv" class='hidden'>
+                        <h3 class='has-text-danger-dark is-size-6 block'><span id="errorMessage"></span></h3>
+                    </div>
+                </div>
+
             </form>
-            <div id="errorMessage"></div>
-            <button id="backtomain" onClick={loadMainMenu}>Back</button>
+
         </div>
     )
 

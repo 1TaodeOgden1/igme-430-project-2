@@ -53,7 +53,7 @@ AccountSchema.statics.toAPI = (doc) => ({
   createdDate: doc.createdDate,
   _id: doc._id,
   wins: doc.wins,
-  premium: false,
+  premium: doc.premium
 });
 
 // Helper function to hash a password
@@ -107,11 +107,11 @@ AccountSchema.statics.UpdatePass = async (username, newpass) => {
   await doc.save();
 };
 
-AccountSchema.statics.SetPremium = async (username, value) => {
+AccountSchema.statics.CheckPremium = async (username) => {
   const doc = await AccountModel.findOne({ username });
-  doc.premium = value;
-  await doc.save();
-};
+
+  return doc.premium;
+}
 
 AccountModel = mongoose.model('Account', AccountSchema);
 module.exports = AccountModel;

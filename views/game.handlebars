@@ -5,25 +5,34 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NotCAH Game</title>
-    <link rel="stylesheet" type="text/css" href="/assets/styles/game.css"/>
+    <link rel="shortcut icon" href="/assets/img/cah_icon.png" />
+    <link rel="stylesheet" type="text/css" href="/assets/styles/game.css" />
     <link rel="stylesheet" href="/assets/styles/general.css">
+    <!--bulma styles-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <!--FontAwesome-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
 </head>
 
-<body>
-    <div id="master-container">
-        <div id="user_container">
-            <!--List users in the room here-->
-            <h2>There would be users here</h2>
-        </div>
-        <div id="main">
-            <!--a simple waiting screen OR 
+<body class='has-background-black' id='master_container'>
+    <div id="main" class="has-background-warning is-flex 
+                              is-align-items-center is-justify-content-center has-text-black">
+        <!--a simple waiting screen OR 
             where the prompt and game info is displayed-->
-        </div>
-        <div id="controls">
-            <!--Player hand / controls go here-->
-        </div>
-
     </div>
+    <div id="user_container" class=" has-background-light">
+        <!--List users in the room here-->
+        <h2>There would be users here</h2>
+    </div>
+    <div id="controls" class=" container has-background-black  is-flex 
+                              is-align-items-center is-justify-content-center has-text-light">
+
+        <!--Player hand / controls go here-->
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="/assets/gameBundle.js"></script>
 </body>

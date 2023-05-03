@@ -7,16 +7,3 @@ html, body {
 }
 
 /*navbars*/ 
-
-nav {
-    display: flex; 
-    position: sticky;
-    height: 7%;
-    background-color: black;
-
-}
-
-.navlink {
-    max-height: 90%;
-}
-

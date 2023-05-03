@@ -98,6 +98,7 @@ class Game {
           submitted: player.chosenCard,
         });
       }
+
       return undefined;
     });
 
@@ -130,16 +131,17 @@ class Game {
   nextRound() {
     if (this.currentRound !== 0) {
       this.players.forEach((player) => {
+        const p = player;
         // players don't draw first round
 
         // each player except for the judge draws
-        if (!player.isJudge) {
-          this.draw(player);
+        if (!p.isJudge) {
+          this.draw(p);
         }
 
         // de-judgify
-        if (player.isJudge) {
-          player.isJudge = false;
+        if (p.isJudge) {
+          p.isJudge = false;
         }
       });
     }
@@ -163,7 +165,8 @@ class Game {
 
     // clear responses
     this.players.forEach((player) => {
-      player.chosenCard = '';
+      const p = player;
+      p.chosenCard = '';
     });
   }
 

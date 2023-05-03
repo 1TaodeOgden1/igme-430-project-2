@@ -4,7 +4,7 @@ module.exports = {
     entry: {
         app: './client/main-menu.jsx',
         game: './client/game.jsx',
-        login: './client/login.jsx'
+        login: './client/login.jsx',
     },
 
     module: {
@@ -14,9 +14,9 @@ module.exports = {
                 exclude: /node_modules/,
                 use: {
                     loader: "babel-loader",
-                }
-            }
-        ]
+                },
+
+            }]
     },
     mode: 'production',
     watchOptions: {

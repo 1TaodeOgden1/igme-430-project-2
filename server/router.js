@@ -8,6 +8,7 @@ const router = (app) => {
   app.post('/signup', mid.requiresSecure, mid.requiresLogout, controllers.Account.signup);
   app.post('/login', mid.requiresSecure, mid.requiresLogout, controllers.Account.login);
   app.post('/change-pass', mid.requiresSecure, mid.requiresLogin, controllers.Account.ChangeAccountPass);
+  app.post('/setPremium', mid.requiresLogin, mid.requiresSecure, controllers.Account.TogglePremium);
 
   // main urls to each handlebar
   app.get('/main-menu', mid.requiresLogin, controllers.Menu.mainPage);
